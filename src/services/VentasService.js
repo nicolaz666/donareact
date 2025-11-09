@@ -87,6 +87,11 @@ const VentasService = {
       throw error;
     }
   },
+  // En VentasService.js
+getDetallesVenta: async (ventaId) => {
+  const response = await axios.get(`/api/ventas/${ventaId}/detalles`);
+  return response.data;
+}
 };
 
 export default VentasService;
