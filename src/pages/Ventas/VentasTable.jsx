@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import VentasService from "../../services/VentasService";
 import AbonoService from "../../services/AbonoService";
 import detalleVentasService from "../../services/detallleVentasService";
@@ -34,11 +34,21 @@ const VentasTable = ()=>{
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false)
   const [mostrarModalDescripcion, setMostrarModalDescripcion] = useState(false)
 
+  // Refs para evitar condiciones de carrera en cargas asíncronas
+  const descripcionRequestIdRef = useRef(0);
+  const unidadesRequestIdRef = useRef(0);
+
+  // Helper para normalizar la forma de respuesta de los servicios
+  const normalizeData = (res) => {
+    if (res === undefined || res === null) return [];
+    return res.data ?? res ?? [];
+  };
+
   const cargarVentas = async () =>{
     try {
       const response = await VentasService.getAllVentas();
-      setVentas(response);
-      console.log("Ventas cargadas:", response);
+      const data = normalizeData(response);
+      setVentas(data);
     } catch (error) {
       console.error("Error al cargar ventas:", error);
     }
@@ -46,6 +56,7 @@ const VentasTable = ()=>{
 
   useEffect(() => {
     cargarVentas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const eliminarVentas = async(id)=>{
@@ -117,53 +128,36 @@ const VentasTable = ()=>{
 
   // Función para cargar todos los datos relacionados con la venta
   const cargarDatosDescripcion = async (ventaId) => {
+    // Evita actualizaciones si hay otra solicitud más reciente
+    descripcionRequestIdRef.current += 1;
+    const requestId = descripcionRequestIdRef.current;
     setLoadingDescripcion(true);
-    console.log("=== INICIANDO CARGA DE DATOS PARA VENTA:", ventaId, "===");
-    
+
     try {
       // 1. Cargar abonos
-      console.log("🔍 Cargando abonos...");
       const responseAbonos = await AbonoService.getAllAbonos();
-      console.log("📦 Respuesta completa de abonos:", responseAbonos);
-      
-      const abonosData = responseAbonos.data || responseAbonos;
-      console.log("📋 Total de abonos en el sistema:", abonosData.length);
-      
-      const abonosFiltrados = abonosData.filter(abono => {
-        console.log(`Comparando: abono.venta (${abono.venta}) === ventaId (${ventaId})`);
-        return abono.venta === ventaId;
-      });
-      console.log("✅ Abonos filtrados para esta venta:", abonosFiltrados);
-      console.log("📊 Cantidad de abonos filtrados:", abonosFiltrados.length);
+      const abonosData = normalizeData(responseAbonos);
+      const abonosFiltrados = abonosData.filter(abono => Number(abono.venta) === Number(ventaId));
+      if (descripcionRequestIdRef.current !== requestId) return; // obsoleta
       setAbonosVenta(abonosFiltrados);
 
       // 2. Cargar detalles de ventas
-      console.log("🔍 Cargando detalles de ventas...");
       const detallesResponse = await detalleVentasService.getAllDetalleVentas();
-      console.log("📦 Respuesta completa de detalles:", detallesResponse);
-      console.log("📋 Total de detalles en el sistema:", detallesResponse.length);
-      
-      const detallesFiltrados = detallesResponse.filter(detalle => {
-        console.log(`Comparando: detalle.venta (${detalle.venta}) === ventaId (${ventaId})`);
-        return detalle.venta === ventaId;
-      });
-      console.log("✅ Detalles filtrados para esta venta:", detallesFiltrados);
-      console.log("📊 Cantidad de detalles filtrados:", detallesFiltrados.length);
-      
-      // IMPORTANTE: Establecer los detalles filtrados en el estado
+      const detallesData = normalizeData(detallesResponse);
+      const detallesFiltrados = detallesData.filter(detalle => Number(detalle.venta) === Number(ventaId));
+      if (descripcionRequestIdRef.current !== requestId) return; // obsoleta
       setDetallesVenta(detallesFiltrados);
-      console.log("💾 Estado 'detallesVenta' actualizado con:", detallesFiltrados);
 
     } catch (error) {
-      console.error('❌ Error detallado al cargar datos de descripción:', error);
-      console.error('📋 Stack trace:', error.stack);
-      console.error('🔴 Tipo de error:', error.name);
-      console.error('💬 Mensaje de error:', error.message);
-      setAbonosVenta([]);
-      setDetallesVenta([]);
+      console.error('Error al cargar datos de descripción:', error);
+      if (descripcionRequestIdRef.current === requestId) {
+        setAbonosVenta([]);
+        setDetallesVenta([]);
+      }
     } finally {
-      setLoadingDescripcion(false);
-      console.log("=== CARGA DE DATOS FINALIZADA ===");
+      if (descripcionRequestIdRef.current === requestId) {
+        setLoadingDescripcion(false);
+      }
     }
   };
 
@@ -192,38 +186,24 @@ const VentasTable = ()=>{
 
   // Función para cargar unidades de un producto
   const cargarUnidadesProducto = async (productoId, productoInfo, detalleVentaId, ventaId) => {
+    unidadesRequestIdRef.current += 1;
+    const requestId = unidadesRequestIdRef.current;
     setLoadingUnidades(true);
     setProductoSeleccionado(productoInfo);
-    console.log("=== CARGANDO UNIDADES PARA PRODUCTO:", productoId, "===");
-    console.log("Detalle de venta ID:", detalleVentaId);
-    console.log("Venta ID:", ventaId);
-    
+
     try {
-      // Obtener todas las unidades y filtrar por producto, detalle de venta Y venta
-      const todasUnidades = await UnidadProductoService.getAllUnidadProductos();
-      console.log("📦 Todas las unidades:", todasUnidades);
-      
-      // Filtrar unidades que pertenezcan al producto, detalle de venta Y venta específicos
-      const unidadesFiltradas = todasUnidades.filter(unidad => {
-        const coincideProducto = unidad.producto === productoId;
-     
-        const coincideVenta = unidad.venta === ventaId;
-        console.log(`Unidad ${unidad.id}: producto=${unidad.producto}, detalle=${unidad.numeroSerie}, venta=${unidad.venta}`);
-        console.log(`  ↳ Coincide producto: ${coincideProducto}, venta: ${coincideVenta}`);
-        return coincideProducto  && coincideVenta;
-      });
-      
-      console.log("✅ Unidades filtradas para este producto en esta venta:", unidadesFiltradas);
-      console.log("📊 Cantidad de unidades encontradas:", unidadesFiltradas.length);
-      
+      const todasUnidades = normalizeData(await UnidadProductoService.getAllUnidadProductos());
+      const unidadesFiltradas = todasUnidades.filter(unidad => (
+        Number(unidad.producto) === Number(productoId) && Number(unidad.venta) === Number(ventaId)
+      ));
+      if (unidadesRequestIdRef.current !== requestId) return; // obsoleta
       setUnidadesProducto(unidadesFiltradas);
       setMostrarModalUnidades(true);
-      
     } catch (error) {
-      console.error("❌ Error al cargar unidades del producto:", error);
-      setUnidadesProducto([]);
+      console.error("Error al cargar unidades del producto:", error);
+      if (unidadesRequestIdRef.current === requestId) setUnidadesProducto([]);
     } finally {
-      setLoadingUnidades(false);
+      if (unidadesRequestIdRef.current === requestId) setLoadingUnidades(false);
     }
   };
 
@@ -278,7 +258,7 @@ const VentasTable = ()=>{
               </thead>
               <tbody>
                 {unidadesProducto.map((unidad, index) => (
-                  <tr key={index} style={{ 
+                  <tr key={unidad.id ?? unidad.numeroSerie ?? index} style={{ 
                     backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white'
                   }}>
                     <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
@@ -516,7 +496,7 @@ const VentasTable = ()=>{
                 <tbody>
                   {detallesVenta.map((detalle, index) => {
                     return (
-                      <tr key={index} style={{ 
+                      <tr key={detalle.id ?? detalle.producto?.id ?? index} style={{ 
                         backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white'
                       }}>
                         <td style={{ padding: '0.75rem', border: '1px solid #ddd', verticalAlign: 'top' }}>
