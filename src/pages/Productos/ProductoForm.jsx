@@ -1,5 +1,5 @@
 
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';

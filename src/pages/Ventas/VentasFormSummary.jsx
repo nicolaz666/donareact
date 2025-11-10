@@ -1,4 +1,4 @@
-import React from 'react'
+// React import not required with the new JSX transform
 
 function VentasFormSummary({ products, total, abono }) {
   total = products.reduce((sum, product) => sum + product.precio * product.quantity, 0);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import VentasFormSelector from './VentasFormSelector';
 import VentasFormList from './VentasFormList';
 import VentasFormSummary from './VentasFormSummary';

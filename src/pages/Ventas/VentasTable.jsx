@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import VentasService from "../../services/VentasService";
 import AbonoService from "../../services/AbonoService";
 import detalleVentasService from "../../services/detallleVentasService";
@@ -74,9 +74,9 @@ const VentasTable = ()=>{
       const fecha = new Date(fechaISO);
       const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
       return new Intl.DateTimeFormat('es-ES', opciones).format(fecha);
-    } catch (error) {
-      return 'Fecha inválida';
-    }
+      } catch {
+        return 'Fecha inválida';
+      }
   };
 
   const formatearNumero = (num) => {

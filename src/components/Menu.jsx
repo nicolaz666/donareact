@@ -1,7 +1,7 @@
 
-import React from 'react'
+// React import not required with the new JSX transform
 import {Link} from 'react-router-dom'
-import {LuBox, LuShoppingCart, LuShoppingBag} from "react-icons/lu";
+import {LuBox, LuShoppingBag} from "react-icons/lu";
 import { FaPeopleGroup } from "react-icons/fa6";
 import { BiSolidCategory } from "react-icons/bi";
 import { BsBoxSeam } from "react-icons/bs";

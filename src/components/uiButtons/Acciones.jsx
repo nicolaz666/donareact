@@ -1,4 +1,4 @@
-import React from "react"
+// React import not required with the new JSX transform
 import { Button } from 'primereact/button';
 
 

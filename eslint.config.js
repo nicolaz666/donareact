@@ -33,6 +33,8 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      // Project prefers TypeScript/PropTypes not enforced for now
+      'react/prop-types': 'off',
     },
   },
 ]

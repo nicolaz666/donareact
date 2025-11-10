@@ -1,4 +1,4 @@
-import {React, useState} from 'react'
+// React import not required with the new JSX transform
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';

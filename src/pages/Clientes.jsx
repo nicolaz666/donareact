@@ -1,5 +1,5 @@
 
-import React from 'react';
+// React import not required with the new JSX transform
 import { useState, useEffect } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';

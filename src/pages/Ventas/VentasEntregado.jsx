@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import VentasService from '../../services/VentasService';
 
 const BotonEntregado = ({ rowdata, onUpdate }) => {
