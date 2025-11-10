@@ -11,6 +11,7 @@ import { Dialog } from 'primereact/dialog';
 import VentasForm from "./VentasForm";
 import VentasFormEdit from "./VentasFormEdit"
 import BotonEntregado from "./VentasEntregado";
+import UnidadProductoService from "../../services/UnidadProductoService";
 
 const VentasTable = ()=>{
 
@@ -22,6 +23,12 @@ const VentasTable = ()=>{
   const [abonosVenta, setAbonosVenta] = useState([]);
   const [detallesVenta, setDetallesVenta] = useState([]);
   const [loadingDescripcion, setLoadingDescripcion] = useState(false);
+
+  // Estados para el modal de unidades de producto
+  const [mostrarModalUnidades, setMostrarModalUnidades] = useState(false);
+  const [unidadesProducto, setUnidadesProducto] = useState([]);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  const [loadingUnidades, setLoadingUnidades] = useState(false);
 
   const [mostrarModal, setMostrarModal] = useState(false)
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false)
@@ -183,6 +190,185 @@ const VentasTable = ()=>{
     );
   };
 
+  // Función para cargar unidades de un producto
+  const cargarUnidadesProducto = async (productoId, productoInfo, detalleVentaId, ventaId) => {
+    setLoadingUnidades(true);
+    setProductoSeleccionado(productoInfo);
+    console.log("=== CARGANDO UNIDADES PARA PRODUCTO:", productoId, "===");
+    console.log("Detalle de venta ID:", detalleVentaId);
+    console.log("Venta ID:", ventaId);
+    
+    try {
+      // Obtener todas las unidades y filtrar por producto, detalle de venta Y venta
+      const todasUnidades = await UnidadProductoService.getAllUnidadProductos();
+      console.log("📦 Todas las unidades:", todasUnidades);
+      
+      // Filtrar unidades que pertenezcan al producto, detalle de venta Y venta específicos
+      const unidadesFiltradas = todasUnidades.filter(unidad => {
+        const coincideProducto = unidad.producto === productoId;
+     
+        const coincideVenta = unidad.venta === ventaId;
+        console.log(`Unidad ${unidad.id}: producto=${unidad.producto}, detalle=${unidad.numeroSerie}, venta=${unidad.venta}`);
+        console.log(`  ↳ Coincide producto: ${coincideProducto}, venta: ${coincideVenta}`);
+        return coincideProducto  && coincideVenta;
+      });
+      
+      console.log("✅ Unidades filtradas para este producto en esta venta:", unidadesFiltradas);
+      console.log("📊 Cantidad de unidades encontradas:", unidadesFiltradas.length);
+      
+      setUnidadesProducto(unidadesFiltradas);
+      setMostrarModalUnidades(true);
+      
+    } catch (error) {
+      console.error("❌ Error al cargar unidades del producto:", error);
+      setUnidadesProducto([]);
+    } finally {
+      setLoadingUnidades(false);
+    }
+  };
+
+  // Renderizar modal de unidades de producto
+  const renderModalUnidades = () => {
+    if (loadingUnidades) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem' }}>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mb-4"></div>
+          <p style={{ color: '#666', fontSize: '1.1em' }}>Cargando unidades del producto...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ padding: '1rem' }}>
+        {/* Información del producto */}
+        {productoSeleccionado && (
+          <div style={{ 
+            marginBottom: '1.5rem', 
+            padding: '1rem', 
+            backgroundColor: '#f0f9ff', 
+            borderRadius: '8px',
+            border: '2px solid #3b82f6'
+          }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af' }}>
+              🏷️ Producto: {productoSeleccionado.tipo} - {productoSeleccionado.modelo}
+            </h4>
+            <p style={{ margin: '0.25rem 0', fontSize: '0.9em', color: '#64748b' }}>
+              <strong>ID:</strong> #{productoSeleccionado.id} | 
+              <strong> Color:</strong> {productoSeleccionado.colorPrincipal}
+            </p>
+          </div>
+        )}
+
+        {/* Tabla de unidades */}
+        {unidadesProducto.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse',
+              backgroundColor: 'white',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#4f46e5', color: 'white' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd', width: '15%' }}>ID</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd', width: '35%' }}>Número de Serie</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', border: '1px solid #ddd', width: '20%' }}>Estado</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd', width: '30%' }}>Fecha Creación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unidadesProducto.map((unidad, index) => (
+                  <tr key={index} style={{ 
+                    backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white'
+                  }}>
+                    <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
+                      <strong style={{ color: '#4f46e5' }}>#{unidad.id || 'N/A'}</strong>
+                    </td>
+                    <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
+                      <code style={{
+                        padding: '4px 8px',
+                        backgroundColor: '#f1f5f9',
+                        borderRadius: '4px',
+                        fontSize: '0.95em',
+                        fontFamily: 'monospace',
+                        fontWeight: '600',
+                        color: '#1e293b'
+                      }}>
+                        {unidad.numeroSerie || 'N/A'}
+                      </code>
+                    </td>
+                    <td style={{ padding: '0.75rem', border: '1px solid #ddd', textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        fontSize: '0.85em',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        backgroundColor: unidad.estado === 'disponible' ? '#d1fae5' : 
+                                       unidad.estado === 'vendido' ? '#fee2e2' : 
+                                       unidad.estado === 'reservado' ? '#fef3c7' : '#f1f5f9',
+                        color: unidad.estado === 'disponible' ? '#065f46' : 
+                               unidad.estado === 'vendido' ? '#991b1b' : 
+                               unidad.estado === 'reservado' ? '#92400e' : '#475569'
+                      }}>
+                        {unidad.estado || 'N/A'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
+                      {formatearFecha(unidad.fechaCreacion)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div style={{ 
+              marginTop: '1rem',
+              padding: '1rem',
+              backgroundColor: '#e0f2fe',
+              borderRadius: '6px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              border: '2px solid #3b82f6'
+            }}>
+              <span style={{ fontWeight: 'bold', fontSize: '1.1em' }}>
+                Total de Unidades:
+              </span>
+              <span style={{ 
+                fontWeight: 'bold', 
+                fontSize: '1.3em',
+                color: '#1e40af'
+              }}>
+                {unidadesProducto.length}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div style={{ 
+            padding: '3rem', 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            border: '2px dashed #cbd5e1'
+          }}>
+            <div style={{ fontSize: '3em', marginBottom: '1rem' }}>📭</div>
+            <p style={{ 
+              color: '#64748b', 
+              fontStyle: 'italic', 
+              margin: 0, 
+              fontSize: '1.1em',
+              fontWeight: '500'
+            }}>
+              No hay unidades registradas para este producto en esta venta
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Renderizar el contenido del modal de descripción
   const renderModalDescripcion = () => {
     if (!rowDataDescripcion) {
@@ -202,6 +388,31 @@ const VentasTable = ()=>{
 
     return (
       <div style={{ padding: '1rem' }}>
+        {/* Debug Info */}
+        <div style={{ 
+          marginBottom: '2rem', 
+          padding: '1rem', 
+          backgroundColor: '#fff3cd', 
+          borderRadius: '8px',
+          border: '1px solid #ffc107'
+        }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>📊 Debug - Datos Cargados:</h4>
+          <div style={{ fontSize: '0.9em', color: '#856404' }}>
+            <p style={{ margin: '0.25rem 0' }}><strong>Total Abonos Cargados:</strong> {abonosVenta.length}</p>
+            <p style={{ margin: '0.25rem 0' }}><strong>Total Detalles Cargados:</strong> {detallesVenta.length}</p>
+            <p style={{ margin: '0.25rem 0' }}><strong>ID Venta Actual:</strong> {rowDataDescripcion.id}</p>
+          </div>
+          {abonosVenta.length > 0 && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.85em', color: '#856404' }}>
+              <strong>IDs de Abonos:</strong> {abonosVenta.map(a => `#${a.id} (Venta: ${a.venta})`).join(', ')}
+            </div>
+          )}
+          {detallesVenta.length > 0 && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.85em', color: '#856404' }}>
+              <strong>IDs de Detalles:</strong> {detallesVenta.map(d => `#${d.id} (Venta: ${d.venta})`).join(', ')}
+            </div>
+          )}
+        </div>
 
         {/* Información General de la Venta */}
         <div style={{ 
@@ -380,6 +591,31 @@ const VentasTable = ()=>{
                                     <strong style={{ color: '#4f46e5' }}>Observaciones:</strong> {detalle.producto.observaciones}
                                   </p>
                                 )}
+                                
+                                {/* Botón para ver unidades */}
+                                <div style={{ 
+                                  marginTop: '0.75rem',
+                                  paddingTop: '0.75rem',
+                                  borderTop: '1px solid #e5e7eb'
+                                }}>
+                                  <Button
+                                    label="Ver Unidades"
+                                    icon="pi pi-box"
+                                    size="small"
+                                    severity="info"
+                                    outlined
+                                    onClick={() => cargarUnidadesProducto(
+                                      detalle.producto.id, 
+                                      detalle.producto, 
+                                      detalle.id,
+                                      detalle.venta
+                                    )}
+                                    style={{
+                                      width: '100%',
+                                      justifyContent: 'center'
+                                    }}
+                                  />
+                                </div>
                               </div>
                             ) : (
                               <div style={{ 
@@ -746,6 +982,21 @@ const VentasTable = ()=>{
         contentStyle={{ maxHeight: '85vh', overflowY: 'auto' }}
       >
         {renderModalDescripcion()}
+      </Dialog>
+
+      <Dialog
+        header={`Unidades del Producto ${productoSeleccionado ? `#${productoSeleccionado.id}` : ''}`}
+        visible={mostrarModalUnidades}
+        onHide={() => {
+          setMostrarModalUnidades(false);
+          setUnidadesProducto([]);
+          setProductoSeleccionado(null);
+        }}
+        breakpoints={{'960px': '85vw','640px': '95vw'}}
+        style={{width: '70vw'}}
+        contentStyle={{ maxHeight: '80vh', overflowY: 'auto' }}
+      >
+        {renderModalUnidades()}
       </Dialog>
 
     </div>
