@@ -186,26 +186,62 @@ const VentasTable = ()=>{
 
   // Función para cargar unidades de un producto
   const cargarUnidadesProducto = async (productoId, productoInfo, detalleVentaId, ventaId) => {
-    unidadesRequestIdRef.current += 1;
-    const requestId = unidadesRequestIdRef.current;
-    setLoadingUnidades(true);
-    setProductoSeleccionado(productoInfo);
+  unidadesRequestIdRef.current += 1;
+  const requestId = unidadesRequestIdRef.current;
+  setLoadingUnidades(true);
+  setProductoSeleccionado(productoInfo);
 
-    try {
-      const todasUnidades = normalizeData(await UnidadProductoService.getAllUnidadProductos());
-      const unidadesFiltradas = todasUnidades.filter(unidad => (
-        Number(unidad.producto) === Number(productoId) && Number(unidad.venta) === Number(ventaId)
-      ));
-      if (unidadesRequestIdRef.current !== requestId) return; // obsoleta
-      setUnidadesProducto(unidadesFiltradas);
-      setMostrarModalUnidades(true);
-    } catch (error) {
-      console.error("Error al cargar unidades del producto:", error);
-      if (unidadesRequestIdRef.current === requestId) setUnidadesProducto([]);
-    } finally {
-      if (unidadesRequestIdRef.current === requestId) setLoadingUnidades(false);
+  try {
+    console.log('🔍 Buscando unidades para:', { productoId, ventaId, detalleVentaId });
+    
+    const todasUnidades = normalizeData(await UnidadProductoService.getAllUnidadProductos());
+    console.log('📦 Total unidades cargadas:', todasUnidades.length);
+    
+    if (todasUnidades.length > 0) {
+      console.log('🔬 Estructura primera unidad:', todasUnidades[0]);
     }
-  };
+
+    // CORRECCIÓN: Filtrar por producto solamente
+    // Las unidades NO tienen campo "venta" directamente
+    // La relación venta->unidad se hace a través de detalleVentas
+    let unidadesFiltradas;
+    
+    // Detectar estructura del campo producto
+    if (todasUnidades.length > 0) {
+      const primeraUnidad = todasUnidades[0];
+      
+      if (typeof primeraUnidad.producto === 'object' && primeraUnidad.producto?.id) {
+        // Caso: producto es objeto anidado
+        unidadesFiltradas = todasUnidades.filter(unidad => 
+          Number(unidad.producto.id) === Number(productoId) &&
+          unidad.estado === 'vendido' // Solo las vendidas
+        );
+        console.log('✅ Filtrando por producto (objeto) ID:', productoId);
+      } else {
+        // Caso: producto es solo el ID
+        unidadesFiltradas = todasUnidades.filter(unidad => 
+          Number(unidad.producto) === Number(productoId) &&
+          unidad.estado === 'vendido' // Solo las vendidas
+        );
+        console.log('✅ Filtrando por producto (ID) :', productoId);
+      }
+    } else {
+      unidadesFiltradas = [];
+    }
+
+    console.log(`📊 Unidades encontradas: ${unidadesFiltradas.length}`);
+    console.log('📋 Unidades:', unidadesFiltradas);
+
+    if (unidadesRequestIdRef.current !== requestId) return;
+    setUnidadesProducto(unidadesFiltradas);
+    setMostrarModalUnidades(true);
+  } catch (error) {
+    console.error("❌ Error al cargar unidades del producto:", error);
+    if (unidadesRequestIdRef.current === requestId) setUnidadesProducto([]);
+  } finally {
+    if (unidadesRequestIdRef.current === requestId) setLoadingUnidades(false);
+  }
+};
 
   // Renderizar modal de unidades de producto
   const renderModalUnidades = () => {

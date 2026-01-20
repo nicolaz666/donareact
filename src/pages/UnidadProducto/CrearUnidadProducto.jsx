@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InputText } from "primereact/inputtext";
 import { Button } from 'primereact/button';
 import UnidadProductoService from "../../services/UnidadProductoService";
@@ -6,33 +6,36 @@ import UnidadProductoService from "../../services/UnidadProductoService";
 const CrearUnidadProducto = ({ producto, onSuccess }) => {
   const [cantidad, setCantidad] = useState("");
 
+    useEffect(() => {
+    console.log("Componente CrearUnidadProducto renderizado");
+    console.log("Producto recibido:", producto.id);
+  }, []); 
+
   const guardar = async () => {
-    await UnidadProductoService.crearUnidadProducto({
-      
+  try {
+    const response = await UnidadProductoService.crearUnidadProducto({
       estado: "disponible",
       producto: producto.id,
     });
+
+    console.log("Respuesta backend:", response);
     onSuccess();
-  };
 
-  return (
-    <>
-      <p><strong>Producto:</strong> {producto.id}</p>
+  } catch (error) {
+    console.error("❌ Error creando unidad:", error.response?.data || error);
+  }
+};
 
-      <InputText
-        value={cantidad}
-        onChange={(e) => setCantidad(e.target.value)}
-        placeholder="Cantidad"
-        className="w-full mb-3"
-      />
+
+  return <div>
+    <p><strong>Producto:</strong> {producto.id}</p>
 
       <Button
         label="Guardar Unidad"
         severity="success"
         onClick={guardar}
       />
-    </>
-  );
+  </div>
 };
 
 export default CrearUnidadProducto;

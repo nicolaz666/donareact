@@ -7,9 +7,11 @@ import ClienteService from '../../services/ClienteService';
 import VentasService from '../../services/VentasService';
 import AbonoService from '../../services/AbonoService';
 import detalleVentasService from '../../services/detallleVentasService';
+import UnidadProductoService from '../../services/UnidadProductoService';
 
 
 function VentasForm() {
+  const [refreshUnidades, setRefreshUnidades] = useState(0);
   // Estados para datos estáticos y carga inicial
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -176,32 +178,86 @@ function VentasForm() {
     );
   }
 
-  /**
-   * Agrega un producto a la lista de productos seleccionados.
-   * Evita duplicados.
-   */
-  const handleAddProduct = (productId) => {
-    const product = productos.find((p) => p.id === productId);
-    if (product && !selectedProducts.find((p) => p.id === productId)) {
-      setSelectedProducts((prev) => [...prev, { ...product, quantity: 1 }]);
-      // Limpiar error de productos si existe
-      if (errors.selectedProducts) {
-        setErrors(prev => ({ ...prev, selectedProducts: '' }));
+ /**
+ * Agrega un producto a la lista de productos seleccionados.
+ * Maneja tanto plantillas como unidades específicas.
+ * @param {number} id - ID del producto o unidad
+ * @param {string} tipo - 'plantilla' o 'unidad'
+ * @param {object} dataCompleta - Objeto completo con toda la información
+ */
+  const handleAddProduct = (id, tipo, dataCompleta) => {
+    console.log('🎯 Agregando producto:', { id, tipo, dataCompleta });
+
+    let nuevoProducto;
+
+    if (tipo === 'plantilla') {
+      // Verificar que no se agregue un producto duplicado
+      const yaExiste = selectedProducts.find(
+        p => p.tipo === 'plantilla' && p.productoId === id
+      );
+      
+      if (yaExiste) {
+        setErrorMessage('Este producto ya está en la lista. Puedes modificar su cantidad.');
+        setTimeout(() => setErrorMessage(''), 3000);
+        return;
       }
+
+      nuevoProducto = {
+        id: `plantilla-${id}-${Date.now()}`, // ID único para React
+        productoId: id, // ID del producto original para el backend
+        tipo: 'plantilla',
+        nombre: dataCompleta.tipo,
+        productoInfo: dataCompleta,
+        precio: dataCompleta.precio,
+        quantity: 1
+      };
+    } else if (tipo === 'unidad') {
+      // Verificar que la unidad no esté ya agregada
+      const yaExiste = selectedProducts.find(
+        p => p.tipo === 'unidad' && p.unidadId === id
+      );
+      
+      if (yaExiste) {
+        setErrorMessage('Esta unidad específica ya está en la lista.');
+        setTimeout(() => setErrorMessage(''), 3000);
+        return;
+      }
+
+      nuevoProducto = {
+        id: `unidad-${id}-${Date.now()}`, // ID único para React
+        unidadId: id, // ID de la unidad específica para el backend
+        tipo: 'unidad',
+        numeroSerie: dataCompleta.numeroSerie,
+        productoInfo: dataCompleta.producto,
+        precio: dataCompleta.producto.precio,
+        quantity: 1 // Siempre 1 para unidades específicas
+      };
+    }
+
+    console.log('✅ Producto agregado:', nuevoProducto);
+    setSelectedProducts(prev => [...prev, nuevoProducto]);
+    
+    // Limpiar error de productos si existe
+    if (errors.selectedProducts) {
+      setErrors(prev => ({ ...prev, selectedProducts: '' }));
     }
   };
-
   /**
    * Actualiza la cantidad de un producto seleccionado, asegurando mínimo 1.
    */
   const handleQuantityChange = (id, quantity) => {
     const numQuantity = Math.max(1, parseInt(quantity) || 1);
     setSelectedProducts((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, quantity: numQuantity } : p
-      )
+      prev.map((p) => {
+        // Si es una unidad específica, mantener cantidad en 1
+        if (p.tipo === 'unidad') {
+          return p;
+        }
+        // Si es plantilla, permitir cambio de cantidad
+        return p.id === id ? { ...p, quantity: numQuantity } : p;
+      })
     );
-    // Limpiar error de cantidades si existe
+    
     if (errors.quantities) {
       setErrors(prev => ({ ...prev, quantities: '' }));
     }
@@ -235,80 +291,126 @@ function VentasForm() {
    * Maneja el envío del formulario: crea la venta y el abono asociados.
    */
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    clearMessages();
+  e.preventDefault();
+  clearMessages();
 
-    // Validar formulario antes de enviar
-    if (!validateForm()) {
-      setErrorMessage('Por favor, corrige los errores antes de continuar.');
-      return;
+  // Validar formulario antes de enviar
+  if (!validateForm()) {
+    setErrorMessage('Por favor, corrige los errores antes de continuar.');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    // Buscar cliente por nombre para obtener su id
+    const clienteSeleccionado = clientes.find(
+      (cliente) => cliente.nombre === ventaCliente
+    );
+    const cliente_id = clienteSeleccionado?.id;
+
+    if (!cliente_id) {
+      throw new Error('Cliente no válido');
     }
 
-    setSubmitting(true);
+    // 1. Crear la venta
+    const responseVenta = await VentasService.crearVenta({
+      total,
+      fecha_entrega_estimada: fechaEntregaEstimada,
+      comentarios: comentarios.trim(),
+      cliente_id,
+      productos: selectedProducts.map(p => ({
+        producto_id: p.tipo === 'plantilla' ? p.productoId : p.productoInfo.id,
+        unidad_id: p.tipo === 'unidad' ? p.unidadId : null,
+        cantidad: p.quantity,
+        precio_unitario: p.precio
+      }))
+    });
 
-    try {
-      // Buscar cliente por nombre para obtener su id
-      const clienteSeleccionado = clientes.find(
-        (cliente) => cliente.nombre === ventaCliente
-      );
-      const cliente_id = clienteSeleccionado?.id;
+    console.log('✅ Venta creada:', responseVenta);
 
-      if (!cliente_id) {
-        throw new Error('Cliente no válido');
+    // 2. Crear el abono asociado a la venta creada (solo si hay abono)
+    if (abono > 0) {
+      await AbonoService.crearAbono({
+        monto_abonado: abono,
+        venta: responseVenta.id,
+      });
+      console.log('✅ Abono registrado');
+    }
+
+    // 3. Crear detalles de venta
+    const productos = selectedProducts.map(p => {
+      const detalle = {
+        venta: responseVenta.id,
+        cantidad: p.quantity,
+      };
+
+      // Si es una unidad específica, enviar unidad_id
+      if (p.tipo === 'unidad') {
+        detalle.producto_id = p.productoInfo.id; // ID del producto
+        detalle.unidad_id = p.unidadId; // ID de la unidad específica
+      } 
+      // Si es plantilla, solo enviar producto_id
+      else {
+        detalle.producto_id = p.productoId;
       }
 
-      // Crear la venta
-      const responseVenta = await VentasService.crearVenta({
-        total,
-        fecha_entrega_estimada: fechaEntregaEstimada,
-        comentarios: comentarios.trim(),
-        cliente_id,
-        productos: selectedProducts.map(p => ({
-          producto_id: p.id,
-          cantidad: p.quantity,
-          precio_unitario: p.precio
-        }))
+      return detalle;
+    });
+
+    console.log('📋 Detalles a crear:', productos);
+
+    for (const producto of productos) {
+      await detalleVentasService.crearDetalleVenta(producto);
+    }
+    console.log('✅ Detalles de venta creados');
+
+    for (const producto of productos) {
+      await detalleVentasService.crearDetalleVenta(producto);
+    }
+    console.log('✅ Detalles de venta creados');
+
+    // 4. ACTUALIZAR ESTADO DE UNIDADES VENDIDAS A "vendido"
+    const unidadesVendidas = selectedProducts.filter(p => p.tipo === 'unidad');
+    
+    if (unidadesVendidas.length > 0) {
+      console.log(`🔧 Actualizando ${unidadesVendidas.length} unidad(es) a estado "vendido"`);
+      
+      const promesasActualizacion = unidadesVendidas.map(async (unidad) => {
+        try {
+          await UnidadProductoService.actualizarEstado(unidad.unidadId, 'vendido');
+          console.log(`✅ Unidad ${unidad.numeroSerie} actualizada a "vendido"`);
+        } catch (error) {
+          console.error(`❌ Error actualizando unidad ${unidad.numeroSerie}:`, error);
+          // No lanzar error, solo registrar - la venta ya se creó
+        }
       });
 
-
-
-      // Crear el abono asociado a la venta creada (solo si hay abono)
-      if (abono > 0) {
-        await AbonoService.crearAbono({
-          monto_abonado: abono,
-          venta: responseVenta.id,
-        });
-      }
-
-      setSuccessMessage('¡Venta creada exitosamente!');
-      const productos= selectedProducts.map(p => ({
-          venta: responseVenta.id,
-          producto_id: p.id,
-          cantidad: p.quantity,
-        }))
-
-
-      productos.forEach(async (e)=>{
-
-          await detalleVentasService.crearDetalleVenta(e)
-      })
-
-      resetForm();
-
-      // Scroll al top para mostrar el mensaje de éxito
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    } catch (error) {
-      console.error('Error creando la venta o abono:', error);
-      setErrorMessage(
-        error.message === 'Cliente no válido'
-          ? 'Error: Cliente no válido'
-          : 'Error al crear la venta. Por favor, inténtalo de nuevo.'
-      );
-    } finally {
-      setSubmitting(false);
+      // Esperar a que todas las actualizaciones terminen
+      await Promise.all(promesasActualizacion);
     }
-  };
+
+    setSuccessMessage('¡Venta creada exitosamente!');
+    resetForm();
+
+    // Scroll al top para mostrar el mensaje de éxito
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (error) {
+    console.error('Error creando la venta o abono:', error);
+    setErrorMessage(
+      error.message === 'Cliente no válido'
+        ? 'Error: Cliente no válido'
+        : 'Error al crear la venta. Por favor, inténtalo de nuevo.'
+    );
+  } finally {
+    setSubmitting(false);
+  }
+  setSuccessMessage('¡Venta creada exitosamente!');
+  setRefreshUnidades(prev => prev + 1); // Trigger refresh
+  resetForm();
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
@@ -428,7 +530,7 @@ function VentasForm() {
               </svg>
               Selección de Productos
             </h2>
-            <VentasFormSelector productos={productos} onAddProduct={handleAddProduct} />
+            <VentasFormSelector productos={productos} onAddProduct={handleAddProduct} refreshTrigger={refreshUnidades} />
             {errors.selectedProducts && (
               <p className="mt-2 text-sm text-red-600">{errors.selectedProducts}</p>
             )}
