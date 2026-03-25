@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import UnidadProductoService from '../../services/UnidadProductoService';
 
-function VentasFormSelector({ productos = [], onAddProduct,refreshTrigger }) {
+function VentasFormSelector({ productos = [], onAddProduct, refreshTrigger }) {
   const [tipoSeleccion, setTipoSeleccion] = useState('plantilla');
   const [unidadesDisponibles, setUnidadesDisponibles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +42,31 @@ function VentasFormSelector({ productos = [], onAddProduct,refreshTrigger }) {
 
     // Resetear el select
     setSelectedValue('');
+  };
+
+  /**
+   * Formatea el texto que se muestra en el option de plantilla
+   */
+  const formatearOpcionPlantilla = (product) => {
+    const categoria = product.categoria?.nombre || 'Sin categoría';
+    const tipo = product.tipo || 'N/A';
+    const modelo = product.modelo || 'N/A';
+    const precio = Number(product.precio).toFixed(2);
+    
+    return `${categoria} | ${tipo} - ${modelo} - $${precio}`;
+  };
+
+  /**
+   * Formatea el texto que se muestra en el option de unidad
+   */
+  const formatearOpcionUnidad = (unidad) => {
+    const categoria = unidad.producto?.categoria?.nombre || 'Sin categoría';
+    const numeroSerie = unidad.numeroSerie || 'N/A';
+    const tipo = unidad.producto?.tipo || 'N/A';
+    const modelo = unidad.producto?.modelo || 'N/A';
+    const precio = Number(unidad.producto?.precio || 0).toFixed(2);
+    
+    return `${categoria} | ${numeroSerie} - ${tipo} - ${modelo} - $${precio}`;
   };
 
   return (
@@ -94,11 +119,11 @@ function VentasFormSelector({ productos = [], onAddProduct,refreshTrigger }) {
             className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2"
           >
             <option value="">
-              Seleccionar una plantilla de Apero
+              Seleccionar una plantilla de producto
             </option>
             {productos.map((product) => (
               <option key={product.id} value={product.id}>
-                {`${product.tipo} - ${product.modelo} - $${Number(product.precio).toFixed(2)}`}
+                {formatearOpcionPlantilla(product)}
               </option>
             ))}
           </select>
@@ -117,7 +142,7 @@ function VentasFormSelector({ productos = [], onAddProduct,refreshTrigger }) {
             </option>
             {unidadesDisponibles.map((unidad) => (
               <option key={unidad.id} value={unidad.id}>
-                {`${unidad.numeroSerie} - ${unidad.producto.tipo} - ${unidad.producto.modelo} - $${Number(unidad.producto.precio).toFixed(2)}`}
+                {formatearOpcionUnidad(unidad)}
               </option>
             ))}
           </select>
@@ -142,7 +167,7 @@ function VentasFormSelector({ productos = [], onAddProduct,refreshTrigger }) {
         </div>
       )}
 
-      {/* Demo: Mostrar productos disponibles */}
+      {/* Estado actual */}
       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
         <h4 className="text-sm font-semibold text-blue-800 mb-2">📊 Estado actual:</h4>
         <div className="text-xs text-blue-700 space-y-1">

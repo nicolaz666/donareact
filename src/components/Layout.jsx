@@ -7,12 +7,8 @@ import Menu from './Menu'
 export default function Layout() {
   return (
     <div className="flex h-screen">
-    {/* Sidebar */}
-    <div className="w-64 p-4 hidden md:block  bg-gray-800 text-white">
-
-      <h1 className='text-center p-4 font-bold tracking-wide text-lg '> Sistema POS</h1>
-      <Menu />
-    </div>
+    {/* Menu */}
+    <Menu/>
 
     {/* Main Content */}
     <div className="w-full">

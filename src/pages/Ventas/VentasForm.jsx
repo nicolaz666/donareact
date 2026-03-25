@@ -6,12 +6,11 @@ import ProductoService from '../../services/ProductoService';
 import ClienteService from '../../services/ClienteService';
 import VentasService from '../../services/VentasService';
 import AbonoService from '../../services/AbonoService';
-import detalleVentasService from '../../services/detallleVentasService';
-import UnidadProductoService from '../../services/UnidadProductoService';
 
-
-function VentasForm() {
+function VentasForm({ mostrarModal, cargarVentas }) {
+  // Estado para trigger de recarga de unidades disponibles
   const [refreshUnidades, setRefreshUnidades] = useState(0);
+  
   // Estados para datos estáticos y carga inicial
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -65,9 +64,7 @@ function VentasForm() {
       0
     );
     setTotal(newTotal);
-
   }, [selectedProducts]);
-
 
   /**
    * Valida todos los campos del formulario
@@ -143,7 +140,200 @@ function VentasForm() {
     clearMessages();
   };
 
-  // Muestra un mensaje mientras se cargan los datos
+  /**
+   * Formatea el nombre completo del cliente para mostrar en el select
+   */
+  const formatearNombreCliente = (cliente) => {
+    const nombre = cliente.nombre || '';
+    const apellido = cliente.apellido || '';
+    const identificacion = cliente.identificacion || '';
+    
+    // Formato: Nombre Apellido (Identificación)
+    if (apellido && identificacion) {
+      return `${nombre} ${apellido} (${identificacion})`;
+    } else if (apellido) {
+      return `${nombre} ${apellido}`;
+    } else if (identificacion) {
+      return `${nombre} (${identificacion})`;
+    }
+    return nombre;
+  };
+
+  /**
+   * Agrega un producto a la lista de productos seleccionados.
+   * Maneja tanto plantillas como unidades específicas.
+   */
+  const handleAddProduct = (id, tipo, dataCompleta) => {
+    console.log('🎯 Agregando producto:', { id, tipo, dataCompleta });
+
+    let nuevoProducto;
+
+    if (tipo === 'plantilla') {
+      const yaExiste = selectedProducts.find(
+        p => p.tipo === 'plantilla' && p.productoId === id
+      );
+      
+      if (yaExiste) {
+        setErrorMessage('Este producto ya está en la lista. Puedes modificar su cantidad.');
+        setTimeout(() => setErrorMessage(''), 3000);
+        return;
+      }
+
+      nuevoProducto = {
+        id: `plantilla-${id}-${Date.now()}`,
+        productoId: id,
+        tipo: 'plantilla',
+        nombre: dataCompleta.tipo,
+        productoInfo: dataCompleta,
+        precio: dataCompleta.precio,
+        quantity: 1
+      };
+    } else if (tipo === 'unidad') {
+      const yaExiste = selectedProducts.find(
+        p => p.tipo === 'unidad' && p.unidadId === id
+      );
+      
+      if (yaExiste) {
+        setErrorMessage('Esta unidad específica ya está en la lista.');
+        setTimeout(() => setErrorMessage(''), 3000);
+        return;
+      }
+
+      nuevoProducto = {
+        id: `unidad-${id}-${Date.now()}`,
+        unidadId: id,
+        tipo: 'unidad',
+        numeroSerie: dataCompleta.numeroSerie,
+        productoInfo: dataCompleta.producto,
+        precio: dataCompleta.producto.precio,
+        quantity: 1
+      };
+    }
+
+    console.log('✅ Producto agregado:', nuevoProducto);
+    setSelectedProducts(prev => [...prev, nuevoProducto]);
+    
+    if (errors.selectedProducts) {
+      setErrors(prev => ({ ...prev, selectedProducts: '' }));
+    }
+  };
+
+  const handleQuantityChange = (id, quantity) => {
+    const numQuantity = Math.max(1, parseInt(quantity) || 1);
+    setSelectedProducts((prev) =>
+      prev.map((p) => {
+        if (p.tipo === 'unidad') {
+          return p;
+        }
+        return p.id === id ? { ...p, quantity: numQuantity } : p;
+      })
+    );
+    
+    if (errors.quantities) {
+      setErrors(prev => ({ ...prev, quantities: '' }));
+    }
+  };
+
+  const handleRemoveProduct = (id) => {
+    setSelectedProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleAbonoChange = (e) => {
+    const value = parseFloat(e.target.value) || 0;
+    setAbono(value);
+
+    if (value < 0) {
+      setErrors(prev => ({ ...prev, abono: 'El abono no puede ser negativo' }));
+    } else if (value > total) {
+      setErrors(prev => ({ ...prev, abono: 'El abono no puede ser mayor al total' }));
+    } else {
+      setErrors(prev => ({ ...prev, abono: '' }));
+    }
+  };
+
+  /**
+   * Maneja el envío del formulario: crea la venta y el abono asociados.
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    clearMessages();
+
+    if (!validateForm()) {
+      setErrorMessage('Por favor, corrige los errores antes de continuar.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Buscar cliente por el valor del select (que ahora es el ID)
+      const cliente_id = Number(ventaCliente);
+
+      if (!cliente_id) {
+        throw new Error('Cliente no válido');
+      }
+
+      // 1. Crear la venta
+      const responseVenta = await VentasService.crearVenta({
+        total,
+        fecha_entrega_estimada: fechaEntregaEstimada,
+        comentarios: comentarios.trim(),
+        cliente_id,
+        productos: selectedProducts.map(p => ({
+          producto_id: p.tipo === 'plantilla' ? p.productoId : p.productoInfo.id,
+          unidad_id: p.tipo === 'unidad' ? p.unidadId : null,
+          cantidad: p.quantity
+        }))
+      });
+
+      console.log('✅ Venta creada con detalles:', responseVenta);
+
+      // 2. Crear el abono (si hay)
+      if (abono > 0) {
+        await AbonoService.crearAbono({
+          monto_abonado: abono,
+          venta: responseVenta.id,
+        });
+        console.log('✅ Abono registrado');
+      }
+
+      // 3. Trigger refresh de unidades disponibles
+      setRefreshUnidades(prev => prev + 1);
+      
+      // 4. ✅ RECARGAR LA TABLA DE VENTAS
+      if (cargarVentas) {
+        await cargarVentas();
+        console.log('✅ Tabla de ventas recargada');
+      }
+      
+      // 5. Mostrar mensaje de éxito
+      setSuccessMessage('¡Venta creada exitosamente!');
+      
+      // 6. Resetear formulario
+      resetForm();
+
+      // 7. Scroll al top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // 8. ✅ CERRAR EL MODAL DESPUÉS DE 2 SEGUNDOS
+      setTimeout(() => {
+        if (mostrarModal) {
+          mostrarModal(false);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error creando la venta:', error);
+      setErrorMessage(
+        error.message === 'Cliente no válido'
+          ? 'Error: Cliente no válido'
+          : 'Error al crear la venta. Por favor, inténtalo de nuevo.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -155,7 +345,6 @@ function VentasForm() {
     );
   }
 
-  // Muestra error si no se pudieron cargar los datos
   if (errorMessage && clientes.length === 0 && productos.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-8">
@@ -178,250 +367,14 @@ function VentasForm() {
     );
   }
 
- /**
- * Agrega un producto a la lista de productos seleccionados.
- * Maneja tanto plantillas como unidades específicas.
- * @param {number} id - ID del producto o unidad
- * @param {string} tipo - 'plantilla' o 'unidad'
- * @param {object} dataCompleta - Objeto completo con toda la información
- */
-  const handleAddProduct = (id, tipo, dataCompleta) => {
-    console.log('🎯 Agregando producto:', { id, tipo, dataCompleta });
-
-    let nuevoProducto;
-
-    if (tipo === 'plantilla') {
-      // Verificar que no se agregue un producto duplicado
-      const yaExiste = selectedProducts.find(
-        p => p.tipo === 'plantilla' && p.productoId === id
-      );
-      
-      if (yaExiste) {
-        setErrorMessage('Este producto ya está en la lista. Puedes modificar su cantidad.');
-        setTimeout(() => setErrorMessage(''), 3000);
-        return;
-      }
-
-      nuevoProducto = {
-        id: `plantilla-${id}-${Date.now()}`, // ID único para React
-        productoId: id, // ID del producto original para el backend
-        tipo: 'plantilla',
-        nombre: dataCompleta.tipo,
-        productoInfo: dataCompleta,
-        precio: dataCompleta.precio,
-        quantity: 1
-      };
-    } else if (tipo === 'unidad') {
-      // Verificar que la unidad no esté ya agregada
-      const yaExiste = selectedProducts.find(
-        p => p.tipo === 'unidad' && p.unidadId === id
-      );
-      
-      if (yaExiste) {
-        setErrorMessage('Esta unidad específica ya está en la lista.');
-        setTimeout(() => setErrorMessage(''), 3000);
-        return;
-      }
-
-      nuevoProducto = {
-        id: `unidad-${id}-${Date.now()}`, // ID único para React
-        unidadId: id, // ID de la unidad específica para el backend
-        tipo: 'unidad',
-        numeroSerie: dataCompleta.numeroSerie,
-        productoInfo: dataCompleta.producto,
-        precio: dataCompleta.producto.precio,
-        quantity: 1 // Siempre 1 para unidades específicas
-      };
-    }
-
-    console.log('✅ Producto agregado:', nuevoProducto);
-    setSelectedProducts(prev => [...prev, nuevoProducto]);
-    
-    // Limpiar error de productos si existe
-    if (errors.selectedProducts) {
-      setErrors(prev => ({ ...prev, selectedProducts: '' }));
-    }
-  };
-  /**
-   * Actualiza la cantidad de un producto seleccionado, asegurando mínimo 1.
-   */
-  const handleQuantityChange = (id, quantity) => {
-    const numQuantity = Math.max(1, parseInt(quantity) || 1);
-    setSelectedProducts((prev) =>
-      prev.map((p) => {
-        // Si es una unidad específica, mantener cantidad en 1
-        if (p.tipo === 'unidad') {
-          return p;
-        }
-        // Si es plantilla, permitir cambio de cantidad
-        return p.id === id ? { ...p, quantity: numQuantity } : p;
-      })
-    );
-    
-    if (errors.quantities) {
-      setErrors(prev => ({ ...prev, quantities: '' }));
-    }
-  };
-
-  /**
-   * Elimina un producto de la lista de seleccionados por su id.
-   */
-  const handleRemoveProduct = (id) => {
-    setSelectedProducts((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  /**
-   * Maneja el cambio en el campo de abono con validación en tiempo real
-   */
-  const handleAbonoChange = (e) => {
-    const value = parseFloat(e.target.value) || 0;
-    setAbono(value);
-
-    // Validación en tiempo real para el abono
-    if (value < 0) {
-      setErrors(prev => ({ ...prev, abono: 'El abono no puede ser negativo' }));
-    } else if (value > total) {
-      setErrors(prev => ({ ...prev, abono: 'El abono no puede ser mayor al total' }));
-    } else {
-      setErrors(prev => ({ ...prev, abono: '' }));
-    }
-  };
-
-  /**
-   * Maneja el envío del formulario: crea la venta y el abono asociados.
-   */
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  clearMessages();
-
-  // Validar formulario antes de enviar
-  if (!validateForm()) {
-    setErrorMessage('Por favor, corrige los errores antes de continuar.');
-    return;
-  }
-
-  setSubmitting(true);
-
-  try {
-    // Buscar cliente por nombre para obtener su id
-    const clienteSeleccionado = clientes.find(
-      (cliente) => cliente.nombre === ventaCliente
-    );
-    const cliente_id = clienteSeleccionado?.id;
-
-    if (!cliente_id) {
-      throw new Error('Cliente no válido');
-    }
-
-    // 1. Crear la venta
-    const responseVenta = await VentasService.crearVenta({
-      total,
-      fecha_entrega_estimada: fechaEntregaEstimada,
-      comentarios: comentarios.trim(),
-      cliente_id,
-      productos: selectedProducts.map(p => ({
-        producto_id: p.tipo === 'plantilla' ? p.productoId : p.productoInfo.id,
-        unidad_id: p.tipo === 'unidad' ? p.unidadId : null,
-        cantidad: p.quantity,
-        precio_unitario: p.precio
-      }))
-    });
-
-    console.log('✅ Venta creada:', responseVenta);
-
-    // 2. Crear el abono asociado a la venta creada (solo si hay abono)
-    if (abono > 0) {
-      await AbonoService.crearAbono({
-        monto_abonado: abono,
-        venta: responseVenta.id,
-      });
-      console.log('✅ Abono registrado');
-    }
-
-    // 3. Crear detalles de venta
-    const productos = selectedProducts.map(p => {
-      const detalle = {
-        venta: responseVenta.id,
-        cantidad: p.quantity,
-      };
-
-      // Si es una unidad específica, enviar unidad_id
-      if (p.tipo === 'unidad') {
-        detalle.producto_id = p.productoInfo.id; // ID del producto
-        detalle.unidad_id = p.unidadId; // ID de la unidad específica
-      } 
-      // Si es plantilla, solo enviar producto_id
-      else {
-        detalle.producto_id = p.productoId;
-      }
-
-      return detalle;
-    });
-
-    console.log('📋 Detalles a crear:', productos);
-
-    for (const producto of productos) {
-      await detalleVentasService.crearDetalleVenta(producto);
-    }
-    console.log('✅ Detalles de venta creados');
-
-    for (const producto of productos) {
-      await detalleVentasService.crearDetalleVenta(producto);
-    }
-    console.log('✅ Detalles de venta creados');
-
-    // 4. ACTUALIZAR ESTADO DE UNIDADES VENDIDAS A "vendido"
-    const unidadesVendidas = selectedProducts.filter(p => p.tipo === 'unidad');
-    
-    if (unidadesVendidas.length > 0) {
-      console.log(`🔧 Actualizando ${unidadesVendidas.length} unidad(es) a estado "vendido"`);
-      
-      const promesasActualizacion = unidadesVendidas.map(async (unidad) => {
-        try {
-          await UnidadProductoService.actualizarEstado(unidad.unidadId, 'vendido');
-          console.log(`✅ Unidad ${unidad.numeroSerie} actualizada a "vendido"`);
-        } catch (error) {
-          console.error(`❌ Error actualizando unidad ${unidad.numeroSerie}:`, error);
-          // No lanzar error, solo registrar - la venta ya se creó
-        }
-      });
-
-      // Esperar a que todas las actualizaciones terminen
-      await Promise.all(promesasActualizacion);
-    }
-
-    setSuccessMessage('¡Venta creada exitosamente!');
-    resetForm();
-
-    // Scroll al top para mostrar el mensaje de éxito
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  } catch (error) {
-    console.error('Error creando la venta o abono:', error);
-    setErrorMessage(
-      error.message === 'Cliente no válido'
-        ? 'Error: Cliente no válido'
-        : 'Error al crear la venta. Por favor, inténtalo de nuevo.'
-    );
-  } finally {
-    setSubmitting(false);
-  }
-  setSuccessMessage('¡Venta creada exitosamente!');
-  setRefreshUnidades(prev => prev + 1); // Trigger refresh
-  resetForm();
-};
-
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Nueva Venta</h1>
           <p className="text-gray-600">Completa los datos para registrar una nueva venta</p>
         </div>
 
-        {/* Mensajes de éxito y error */}
         {successMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
             <div className="text-green-600 mr-3">
@@ -444,10 +397,7 @@ function VentasForm() {
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-8 bg-white p-8 rounded-xl shadow-xl border border-gray-100"
-        >
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-xl shadow-xl border border-gray-100">
           {/* Información del Cliente y Fecha */}
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -458,10 +408,7 @@ function VentasForm() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label
-                  htmlFor="cliente"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="cliente" className="block text-sm font-semibold text-gray-700 mb-2">
                   Cliente *
                 </label>
                 <select
@@ -482,8 +429,8 @@ function VentasForm() {
                     Selecciona un cliente
                   </option>
                   {clientes.map((cliente) => (
-                    <option key={cliente.id} value={cliente.nombre}>
-                      {cliente.nombre}
+                    <option key={cliente.id} value={cliente.id}>
+                      {formatearNombreCliente(cliente)}
                     </option>
                   ))}
                 </select>
@@ -493,10 +440,7 @@ function VentasForm() {
               </div>
 
               <div>
-                <label
-                  htmlFor="fecha_entrega"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="fecha_entrega" className="block text-sm font-semibold text-gray-700 mb-2">
                   Fecha de Entrega Estimada *
                 </label>
                 <input
@@ -530,7 +474,11 @@ function VentasForm() {
               </svg>
               Selección de Productos
             </h2>
-            <VentasFormSelector productos={productos} onAddProduct={handleAddProduct} refreshTrigger={refreshUnidades} />
+            <VentasFormSelector 
+              productos={productos} 
+              onAddProduct={handleAddProduct} 
+              refreshTrigger={refreshUnidades} 
+            />
             {errors.selectedProducts && (
               <p className="mt-2 text-sm text-red-600">{errors.selectedProducts}</p>
             )}
@@ -566,10 +514,7 @@ function VentasForm() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label
-                  htmlFor="abono"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="abono" className="block text-sm font-semibold text-gray-700 mb-2">
                   Abono (Opcional)
                 </label>
                 <div className="relative">
@@ -593,17 +538,12 @@ function VentasForm() {
                   <p className="mt-1 text-sm text-red-600">{errors.abono}</p>
                 )}
                 {total > 0 && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    Máximo: ${total.toFixed(2)}
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">Máximo: ${total.toFixed(2)}</p>
                 )}
               </div>
 
               <div>
-                <label
-                  htmlFor="comentarios"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="comentarios" className="block text-sm font-semibold text-gray-700 mb-2">
                   Comentarios (Opcional)
                 </label>
                 <textarea
