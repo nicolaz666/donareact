@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:8000/api/clientes/';
+import { buildApiUrl } from '../config/api';
+
+const baseUrl = buildApiUrl('clientes/');
 
 const ClienteService = {
   async getAllClientes() {

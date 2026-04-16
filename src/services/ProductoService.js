@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:8000/api/productos/';
+import { buildApiUrl } from '../config/api';
+
+const baseUrl = buildApiUrl('productos/');
 
 const ProductoService = {
   async getAllProductos() {

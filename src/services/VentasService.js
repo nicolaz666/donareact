@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:8000/api/ventas/';
+import { buildApiUrl } from '../config/api';
+
+const baseUrl = buildApiUrl('ventas/');
 
 // Configurar interceptores para mejor manejo de errores
 axios.interceptors.response.use(
@@ -89,7 +91,7 @@ const VentasService = {
   },
   // En VentasService.js
 getDetallesVenta: async (ventaId) => {
-  const response = await axios.get(`/api/ventas/${ventaId}/detalles`);
+  const response = await axios.get(buildApiUrl(`ventas/${ventaId}/detalles`));
   return response.data;
 }
 };

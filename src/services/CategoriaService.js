@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:8000/api/categorias/';
+import { buildApiUrl } from '../config/api';
+
+const baseUrl = buildApiUrl('categorias/');
 
 const CategoriaService = {
   async getAllCategorias() {

@@ -7,12 +7,12 @@ import GrupoImagenesService from "../../services/GrupoImagenesService";
 const LIMITE_IMAGENES = 3;
 
 // ── Helpers ───────────────────────────────────────────────────────
-const BASE_URL = "http://localhost:8000";
-
 const getImageUrl = (imagen) => {
   if (!imagen) return null;
-  if (imagen.startsWith("http")) return imagen;
-  return `${BASE_URL}${imagen}`;
+  // En producción, la DB debe guardar URLs absolutas (Cloudinary u otro CDN).
+  // Si llega un path relativo por error, no intentamos "arreglarlo" desde el frontend.
+  if (/^https?:\/\//i.test(imagen)) return imagen;
+  return null;
 };
 
 // ── ImagenesModal ─────────────────────────────────────────────────

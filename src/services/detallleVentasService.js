@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:8000/api/detalles-ventas/';
+import { buildApiUrl } from '../config/api';
+
+const baseUrl = buildApiUrl('detalles-ventas/');
 
 // Configurar interceptores para mejor manejo de errores
 axios.interceptors.response.use(
