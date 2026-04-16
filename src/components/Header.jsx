@@ -46,7 +46,16 @@ export default function Header() {
 
       <div className='flex p-4 border-b-4 border-indigo-400 justify-between items-center'>
         {/* Sidebar móvil */}
-        <Sidebar visible={visible} onHide={() => setVisible(false)}>
+        <Sidebar
+          visible={visible}
+          onHide={() => setVisible(false)}
+          style={{ padding: 0, width: "280px" }}
+          pt={{
+            root: { style: { padding: 0 } },
+            header: { style: { display: "none" } },
+            content: { style: { padding: 0, height: "100%", overflow: "hidden" } },
+          }}
+        >
           <Menu
             variant="mobile"
             onNavigate={() => setVisible(false)}

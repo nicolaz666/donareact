@@ -122,16 +122,21 @@ const Menu = ({ variant = "desktop", onNavigate }) => {
   return (
     <aside
       style={{
-        width: shouldCollapse ? "88px" : "240px",
-        minHeight: "100vh",
+        width: isMobile ? "280px" : shouldCollapse ? "88px" : "240px",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
         background: "linear-gradient(180deg, #1a2236 0%, #131c2e 60%, #0f1724 100%)",
         borderRight: "1px solid rgba(255,255,255,0.06)",
         padding: "0",
-        position: "relative",
+        position: isMobile ? "relative" : "relative",
+        top: 0,
+        left: 0,
         fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         transition: "width 220ms ease",
+        flexShrink: 0,
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
     >
       {/* Subtle top glow */}
