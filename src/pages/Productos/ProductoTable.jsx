@@ -7,6 +7,8 @@ import UnidadProducto from "../UnidadProducto/UnidadProducto";
 import CrearUnidadProducto from "../UnidadProducto/CrearUnidadProducto";
 import { Edit2, Trash2, Package, PlusCircle, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
 import ImagenesModal from "./Imagenesmodal";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
 
 // ── Color badge config ────────────────────────────────────────────
 const COLOR_PALETTE = {
@@ -157,12 +159,10 @@ const ProductoTable = () => {
     new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(price);
 
   return (
-    <div style={{
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: "#f8fafc",
-      minHeight: "100vh",
-      padding: "24px",
-    }}>
+    <div
+      style={{ fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}
+      className="space-y-4"
+    >
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -179,23 +179,15 @@ const ProductoTable = () => {
             {filtered.length} productos registrados
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="md"
           onClick={() => setMostrarModal(true)}
-          style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "10px 18px", borderRadius: "10px",
-            background: "#0f172a", color: "#fff",
-            border: "none", cursor: "pointer",
-            fontSize: "13px", fontWeight: 600, letterSpacing: "0.01em",
-            transition: "background 0.2s, transform 0.15s",
-            boxShadow: "0 2px 8px rgba(15,23,42,0.18)"
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
-          onMouseLeave={e => e.currentTarget.style.background = "#0f172a"}
+          className="shadow-[0_2px_8px_rgba(15,23,42,0.18)]"
         >
           <Plus size={16} />
           Nuevo Producto
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
@@ -218,23 +210,26 @@ const ProductoTable = () => {
           }}
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm("")} style={{
-            border: "none", background: "#f1f5f9", color: "#64748b",
-            borderRadius: "6px", padding: "2px 8px", cursor: "pointer",
-            fontSize: "12px"
-          }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setSearchTerm("")}
+            className="px-2 h-9 text-[12px]"
+          >
             Limpiar
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* Table */}
-      <div style={{
-        background: "#fff", borderRadius: "14px",
-        border: "1px solid #e2e8f0",
-        overflow: "hidden",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
-      }}>
+      {/* Table (Desktop) */}
+      <div className="hidden md:block">
+        <div style={{
+          background: "#fff", borderRadius: "14px",
+          border: "1px solid #e2e8f0",
+          overflowX: "auto",
+          overflowY: "hidden",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
+        }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
@@ -537,6 +532,312 @@ const ProductoTable = () => {
                   color: currentPage === totalPages ? "#cbd5e1" : "#475569",
                   cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+        </div>
+      </div>
+
+      {/* Table (Mobile) */}
+      <div className="md:hidden">
+        {paginated.length === 0 ? (
+          <Card className="p-10 text-center">
+            <Package
+              size={32}
+              style={{ display: "block", margin: "0 auto 10px", opacity: 0.4 }}
+            />
+            <p style={{ margin: 0, color: "#94a3b8", fontSize: "14px" }}>
+              No se encontraron productos
+            </p>
+          </Card>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {paginated.map((rowData) => {
+              const tipoStyle =
+                TIPO_COLORS[rowData.tipo] || {
+                  bg: "#f1f5f9",
+                  text: "#64748b",
+                }
+
+              const isDeleteMode = deleteConfirmId === rowData.id
+
+              return (
+                <Card
+                  key={rowData.id}
+                  className="p-4"
+                  style={{ transition: "border-color 0.15s" }}
+                >
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setModalImagenes({ visible: true, producto: rowData })
+                      }
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        padding: 0,
+                        cursor: "pointer",
+                        flexShrink: 0,
+                      }}
+                      aria-label="Abrir imágenes del producto"
+                    >
+                      <ProductImage imagenes={rowData.imagenes} />
+                    </button>
+
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: "10px",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontWeight: 800,
+                              fontSize: "14px",
+                              color: "#0f172a",
+                              lineHeight: 1.2,
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {rowData.modelo}
+                          </div>
+                          <div style={{ marginTop: "3px" }}>
+                            <span style={{ fontSize: "11px", color: "#64748b" }}>
+                              {rowData.categoria?.nombre}
+                            </span>
+                            <span style={{ color: "#cbd5e1", fontSize: "11px" }}>
+                              {" "}
+                              ·{" "}
+                            </span>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "1px 7px",
+                                borderRadius: "999px",
+                                fontSize: "10.5px",
+                                fontWeight: 700,
+                                background: tipoStyle.bg,
+                                color: tipoStyle.text,
+                              }}
+                            >
+                              {rowData.tipo}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "right" }}>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 800,
+                              color: "#047857",
+                              fontVariantNumeric: "tabular-nums",
+                              fontFamily:
+                                "'DM Mono', 'Fira Code', monospace",
+                              letterSpacing: "-0.3px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {formatPrice(rowData.precio)}
+                          </div>
+                          <div style={{ marginTop: "2px", fontSize: "11px", color: "#94a3b8" }}>
+                            #{rowData.id}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        <ColorBadge color={rowData.colorPrincipal} />
+                      </div>
+
+                      <div style={{ marginTop: "12px" }}>
+                        {isDeleteMode ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700 }}>
+                              ¿Eliminar?
+                            </span>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => eliminarProducto(rowData.id)}
+                                className="h-9"
+                              >
+                                Sí
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="h-9"
+                              >
+                                No
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                setModalImagenes({ visible: true, producto: rowData })
+                              }
+                              className="h-9"
+                            >
+                              <Package size={16} />
+                              Imágenes
+                            </Button>
+
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProduct(rowData)
+                                setMostrarModalUnidades(true)
+                              }}
+                              className="h-9"
+                            >
+                              <Package size={16} />
+                              Ver
+                            </Button>
+
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={() => {
+                                setProductoCrearUnidad(rowData)
+                                setMostrarModalCrearUnidad(true)
+                              }}
+                              className="h-9"
+                            >
+                              <PlusCircle size={16} />
+                              Crear
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setRowDataEditar(rowData)
+                                setMostrarModalEditar(true)
+                              }}
+                              className="h-9"
+                            >
+                              <Edit2 size={16} />
+                              Editar
+                            </Button>
+
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => setDeleteConfirmId(rowData.id)}
+                                className="w-full h-9"
+                              >
+                                <Trash2 size={16} />
+                                Eliminar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Pagination (Mobile) */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 0",
+              borderTop: "1px solid #f1f5f9",
+              background: "#fafafa",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+              Página {currentPage} de {totalPages} · {filtered.length} resultados
+            </span>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                  color: currentPage === 1 ? "#cbd5e1" : "#475569",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ChevronLeft size={15} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setCurrentPage(p)}
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "8px",
+                    border: p === currentPage ? "none" : "1px solid #e2e8f0",
+                    background: p === currentPage ? "#0f172a" : "#fff",
+                    color: p === currentPage ? "#fff" : "#475569",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: p === currentPage ? 700 : 400,
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                  color: currentPage === totalPages ? "#cbd5e1" : "#475569",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <ChevronRight size={15} />

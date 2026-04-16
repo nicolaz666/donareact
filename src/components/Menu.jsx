@@ -6,7 +6,7 @@ import {
   Tag,
   Package,
   ShoppingCart,
-  LogOut,
+  ChevronLeft,
   ChevronRight,
   Zap,
 } from "lucide-react";
@@ -19,18 +19,19 @@ const LINKS_SIDEBAR = [
   { id: 5, path: "/MostrarVentas", name: "Ventas", icon: ShoppingCart },
 ];
 
-const NavItem = ({ link, isActive }) => {
+const NavItem = ({ link, isActive, collapsed, onNavigate }) => {
   const Icon = link.icon;
 
   return (
     <li>
       <Link
         to={link.path}
+        onClick={() => onNavigate?.()}
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
-          padding: "11px 14px",
+          gap: collapsed ? "10px" : "12px",
+          padding: collapsed ? "11px 12px" : "11px 14px",
           borderRadius: "10px",
           position: "relative",
           textDecoration: "none",
@@ -87,19 +88,21 @@ const NavItem = ({ link, isActive }) => {
         </span>
 
         {/* Label */}
-        <span
-          style={{
-            fontSize: "14px",
-            letterSpacing: "0.01em",
-            transition: "color 0.2s ease",
-            flex: 1,
-          }}
-        >
-          {link.name}
-        </span>
+        {!collapsed && (
+          <span
+            style={{
+              fontSize: "14px",
+              letterSpacing: "0.01em",
+              transition: "color 0.2s ease",
+              flex: 1,
+            }}
+          >
+            {link.name}
+          </span>
+        )}
 
         {/* Chevron on active */}
-        {isActive && (
+        {isActive && !collapsed && (
           <ChevronRight
             size={14}
             style={{ opacity: 0.5, flexShrink: 0 }}
@@ -110,13 +113,16 @@ const NavItem = ({ link, isActive }) => {
   );
 };
 
-const Menu = () => {
+const Menu = ({ variant = "desktop", onNavigate }) => {
   const location = useLocation();
+  const isMobile = variant === "mobile";
+  const [collapsed, setCollapsed] = useState(false);
+  const shouldCollapse = !isMobile && collapsed;
 
   return (
     <aside
       style={{
-        width: "240px",
+        width: shouldCollapse ? "88px" : "240px",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -125,6 +131,7 @@ const Menu = () => {
         padding: "0",
         position: "relative",
         fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+        transition: "width 220ms ease",
       }}
     >
       {/* Subtle top glow */}
@@ -143,75 +150,119 @@ const Menu = () => {
       {/* ── LOGO AREA ── */}
       <div
         style={{
-          padding: "24px 20px 20px",
+          padding: shouldCollapse ? "24px 12px 20px" : "24px 20px 20px",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           display: "flex",
           alignItems: "center",
+          justifyContent: !isMobile ? "space-between" : "flex-start",
           gap: "10px",
         }}
       >
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(139,92,246,0.35)",
-          }}
-        >
-          <Zap size={16} color="#fff" strokeWidth={2.5} />
-        </div>
-        <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div
             style={{
-              fontSize: "15px",
-              fontWeight: "700",
-              color: "#f1f5f9",
-              lineHeight: 1.1,
-              letterSpacing: "-0.01em",
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(139,92,246,0.35)",
             }}
           >
-            DONACIANO
+            <Zap size={16} color="#fff" strokeWidth={2.5} />
           </div>
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#64748b",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              fontWeight: "500",
-            }}
-          >
-            Panel de gestión
-          </div>
+
+          {!shouldCollapse && (
+            <div>
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  color: "#f1f5f9",
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                DONACIANO
+              </div>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#64748b",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  fontWeight: "500",
+                }}
+              >
+                Panel de gestión
+              </div>
+            </div>
+          )}
         </div>
+
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            style={{
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              padding: 6,
+              borderRadius: 10,
+              color: "#94a3b8",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background 0.15s ease, color 0.15s ease",
+            }}
+            aria-label={shouldCollapse ? "Expandir menú" : "Contraer menú"}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+              e.currentTarget.style.color = "#e2e8f0";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#94a3b8";
+            }}
+          >
+            {shouldCollapse ? (
+              <ChevronRight size={16} style={{ opacity: 0.8 }} />
+            ) : (
+              <ChevronLeft size={16} style={{ opacity: 0.8 }} />
+            )}
+          </button>
+        )}
       </div>
 
       {/* ── NAV LINKS ── */}
       <nav style={{ flex: 1, padding: "16px 12px" }}>
-        <p
-          style={{
-            fontSize: "10px",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#475569",
-            fontWeight: "600",
-            padding: "0 6px",
-            marginBottom: "10px",
-          }}
-        >
-          Menú principal
-        </p>
+        {!shouldCollapse && (
+          <p
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#475569",
+              fontWeight: "600",
+              padding: "0 6px",
+              marginBottom: "10px",
+            }}
+          >
+            Menú principal
+          </p>
+        )}
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {LINKS_SIDEBAR.map((link) => (
             <NavItem
               key={link.id}
               link={link}
               isActive={location.pathname === link.path}
+              collapsed={shouldCollapse}
+              onNavigate={onNavigate}
             />
           ))}
         </ul>

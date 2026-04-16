@@ -47,7 +47,10 @@ export default function Header() {
       <div className='flex p-4 border-b-4 border-indigo-400 justify-between items-center'>
         {/* Sidebar móvil */}
         <Sidebar visible={visible} onHide={() => setVisible(false)}>
-          <Menu/>
+          <Menu
+            variant="mobile"
+            onNavigate={() => setVisible(false)}
+          />
         </Sidebar>
 
         {/* Botón menú hamburguesa (solo móvil) */}
@@ -57,6 +60,7 @@ export default function Header() {
             style={{ fontSize: '1.5rem' }} 
             onClick={() => setVisible(true)} 
             text
+            aria-label="Abrir menú"
           />
         </div>
 
