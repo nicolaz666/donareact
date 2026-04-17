@@ -1,68 +1,120 @@
 import { useState, useEffect } from "react";
 import CategoriaService from "../../services/CategoriaService";
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import Acciones from "../../components/uiButtons/Acciones";
-import HeaderTable from "../../components/uiButtons/HeaderTable";
 import { Dialog } from 'primereact/dialog';
 import CategoriaForm from "./CategoriaForm";
 import CategoriaFormEdit from "./CategoriaFormEdit";
+import { ResponsiveTableWrapper, ActionButtons, CardItem } from "../../components/ui/table";
+
+const ROWS_PER_PAGE = 8;
 
 const CategoriaTable = () => {
-
   const [categorias, setCategorias] = useState([]);
   const [rowDataEditar, setRowDataEditar] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const cargarCategorias = async () => {
     try {
-      setLoading(true);
       const response = await CategoriaService.getAllCategorias();
       setCategorias(response);
     } catch (error) {
       console.error("Error al cargar categorías:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    cargarCategorias();
-  }, []);
+  useEffect(() => { cargarCategorias(); }, []);
 
   const eliminar = async (id) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar esta categoría?")) {
-      try {
-        const response = await CategoriaService.eliminarCategoria(id);
-        cargarCategorias();
-        console.log(response);
-      } catch (error) {
-        console.error("Error al eliminar la categoría:", error);
-      }
+    try {
+      await CategoriaService.eliminarCategoria(id);
+      setDeleteConfirmId(null);
+      cargarCategorias();
+    } catch (error) {
+      console.error("Error al eliminar la categoría:", error);
     }
   };
 
+  const filtered = categorias.filter(c =>
+    c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(c.id).includes(searchTerm)
+  );
+
+  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+  const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+
+  const handleSearch = (val) => { setSearchTerm(val); setCurrentPage(1); };
+
+  const columns = [
+    {
+      key: "id", header: "ID",
+      render: r => <span style={{ fontSize: "12px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>#{r.id}</span>,
+    },
+    {
+      key: "nombre", header: "Nombre",
+      render: r => <span style={{ fontWeight: 600, fontSize: "13.5px", color: "#0f172a" }}>{r.nombre}</span>,
+    },
+    {
+      key: "acciones", header: "Acciones",
+      render: r => (
+        <ActionButtons
+          rowId={r.id}
+          confirmId={deleteConfirmId}
+          onConfirm={(id) => eliminar(id)}
+          onCancelConfirm={() => setDeleteConfirmId(null)}
+          actions={[
+            { type: "edit", onClick: () => { setRowDataEditar(r); setMostrarModalEditar(true); } },
+            { type: "delete", onClick: () => setDeleteConfirmId(r.id) },
+          ]}
+        />
+      ),
+    },
+  ];
+
+  const renderCard = (row) => (
+    <CardItem
+      title={row.nombre}
+      metaLabel={`#${row.id}`}
+      isHighlighted={deleteConfirmId === row.id}
+      actions={
+        <ActionButtons
+          variant="full"
+          rowId={row.id}
+          confirmId={deleteConfirmId}
+          onConfirm={(id) => eliminar(id)}
+          onCancelConfirm={() => setDeleteConfirmId(null)}
+          actions={[
+            { type: "edit", onClick: () => { setRowDataEditar(row); setMostrarModalEditar(true); } },
+            { type: "delete", onClick: () => setDeleteConfirmId(row.id) },
+          ]}
+        />
+      }
+    />
+  );
+
   return (
-    <div className="card">
-      <DataTable
-        value={categorias}
-        paginator
-        rows={5}
-        header={<HeaderTable nombre="Categoria" mostrarModal={setMostrarModal} />}
-        resizableColumns
-        showGridlines
-        tableStyle={{ minWidth: '50rem' }}
-        loading={loading}
-        rowClassName={(data, index) => `row-${index}`}
-        sortMode="single"
-        scrollable
-      >
-        <Column field="id" header="ID" sortable />
-        <Column field="nombre" header="Nombre" sortable />
-        <Column header="Acciones" body={(rowData) => <Acciones rowData={rowData} setRowData={setRowDataEditar} mostrarModal={setMostrarModalEditar} eliminar={eliminar} />} />
-      </DataTable>
+    <div>
+      <ResponsiveTableWrapper
+        title="Categorías"
+        addLabel="Nueva Categoría"
+        onAdd={() => setMostrarModal(true)}
+        countLabel="categorías registradas"
+        searchValue={searchTerm}
+        onSearchChange={handleSearch}
+        searchPlaceholder="Buscar por nombre o ID..."
+        rows={paginated}
+        allRows={filtered}
+        keyField="id"
+        columns={columns}
+        renderCard={renderCard}
+        emptyMessage="No se encontraron categorías"
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        highlightRow={r => deleteConfirmId === r.id}
+      />
 
       <Dialog
         header="Agregar Categoria"
@@ -72,7 +124,7 @@ const CategoriaTable = () => {
         style={{ width: '50vw' }}
         contentStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
       >
-        {<CategoriaForm mostrarModal={setMostrarModal} cargarCategorias={cargarCategorias} />}
+        <CategoriaForm mostrarModal={setMostrarModal} cargarCategorias={cargarCategorias} />
       </Dialog>
 
       <Dialog
@@ -83,7 +135,12 @@ const CategoriaTable = () => {
         style={{ width: '50vw' }}
         contentStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
       >
-        {<CategoriaFormEdit rowData={rowDataEditar} setRowDataEditar={setRowDataEditar} cargarCategorias={cargarCategorias} mostrarModal={setMostrarModalEditar} />}
+        <CategoriaFormEdit
+          rowData={rowDataEditar}
+          setRowDataEditar={setRowDataEditar}
+          cargarCategorias={cargarCategorias}
+          mostrarModal={setMostrarModalEditar}
+        />
       </Dialog>
     </div>
   );
