@@ -450,18 +450,23 @@ const StepColores = ({ state, set, errors }) => {
         </Field>
       </div>
 
-      <hr className="pf-divider" />
-
-      <div className="pf-grid-2">
-        <Field label="Color Cordón" error={errors.colorCordon1}>
-          <Select value={s.colorCordon1} onChange={v => set('colorCordon1', v)}
-            options={COLORES_CHOICES} placeholder="Cordón principal" error={errors.colorCordon1} />
-        </Field>
-        <Field label="Color Cordón Combinado" optional>
-          <Select value={s.colorCordon2} onChange={v => set('colorCordon2', v)}
-            options={COLORES_CHOICES} placeholder="Cordón combinado" />
-        </Field>
-      </div>
+      {(s.tipo === 'Tejido' || s.tipo === 'Rejo') && (
+        <>
+          <hr className="pf-divider" />
+          <div className="pf-grid-2">
+            <Field label="Color Cordón" error={errors.colorCordon1}>
+              <Select value={s.colorCordon1} onChange={v => set('colorCordon1', v)}
+                options={COLORES_CHOICES} placeholder="Cordón principal" error={errors.colorCordon1} />
+            </Field>
+            {s.tipo === 'Tejido' && (
+              <Field label="Color Cordón Combinado" optional>
+                <Select value={s.colorCordon2} onChange={v => set('colorCordon2', v)}
+                  options={COLORES_CHOICES} placeholder="Cordón combinado" />
+              </Field>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -540,7 +545,7 @@ const VALIDATORS = {
     const e = {};
     if (!s.colorPrincipal)  e.colorPrincipal  = 'Selecciona el color principal';
     if (!s.colorTejido)     e.colorTejido     = 'Selecciona el color tejido';
-    if (!s.colorCordon1)    e.colorCordon1    = 'Selecciona el color cordón';
+    if ((s.tipo === 'Tejido' || s.tipo === 'Rejo') && !s.colorCordon1) e.colorCordon1 = 'Selecciona el color cordón';
     if (!s.colorSogaRienda) e.colorSogaRienda = 'Selecciona el color soga rienda';
     if (!s.colorManzanos)   e.colorManzanos   = 'Selecciona el color manzanos';
     if (!s.colorCoronas)    e.colorCoronas    = 'Selecciona el color coronas';
