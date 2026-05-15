@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom"
 import Layout from "./components/Layout"
 import Home from "./pages/Home"
@@ -8,6 +9,7 @@ import Producto from "./pages/Productos/Producto"
 import AuthService from './services/AuthService';
 import './services/axiosConfig';
 import Login from './pages/Auth/Login';
+import StartupLoader from './components/StartupLoader';
 
 function ProtectedRoute() {
   return AuthService.isAuthenticated()
@@ -16,28 +18,34 @@ function ProtectedRoute() {
 }
 
 function App() {
+  const [serverReady, setServerReady] = useState(false);
+
   return (
-    <BrowserRouter future={{ v7_startTransition: true }}>
-      <Routes>
+    <>
+      {!serverReady && <StartupLoader onReady={() => setServerReady(true)} />}
 
-        {/* ✅ Ruta pública (FUERA del layout) */}
-        <Route path="/login" element={<Login />} />
+      <BrowserRouter future={{ v7_startTransition: true }}>
+        <Routes>
 
-        {/* ✅ Rutas protegidas */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Layout />}>
+          {/* ✅ Ruta pública (FUERA del layout) */}
+          <Route path="/login" element={<Login />} />
 
-            <Route index element={<Home />} />
-            <Route path="Clientes" element={<Clientes />} />
-            <Route path="Categorias" element={<Categorias />} />
-            <Route path="MostrarVentas" element={<MostrarVentas />} />
-            <Route path="Producto" element={<Producto />} />
+          {/* ✅ Rutas protegidas */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Layout />}>
 
+              <Route index element={<Home />} />
+              <Route path="Clientes" element={<Clientes />} />
+              <Route path="Categorias" element={<Categorias />} />
+              <Route path="MostrarVentas" element={<MostrarVentas />} />
+              <Route path="Producto" element={<Producto />} />
+
+            </Route>
           </Route>
-        </Route>
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </>
   )
 }
 
