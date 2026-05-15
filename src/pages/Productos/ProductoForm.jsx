@@ -3,16 +3,12 @@ import { Toast } from 'primereact/toast';
 import ProductoService from '../../services/ProductoService';
 import CategoriaService from '../../services/CategoriaService';
 import GrupoImagenesService from '../../services/GrupoImagenesService';
+import ColorService from '../../services/ColorService';
 
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
 const LIMITE_IMAGENES = 3;
-
-const COLORES_CHOICES = [
-  'Naranja','Negro','Roble','Crudo','Azul Celeste','Azul Rey',
-  'Amarillo','Rojo','Rosado','Verde Claro','Verde Militar','Crudo Amarillo','Blanco Natural',
-].map(c => ({ label: c, value: c }));
 
 const TIPOS = ['Tejido','Rejo','Plano','Sencillo'].map(t => ({ label: t, value: t }));
 const MODELOS = [
@@ -20,9 +16,6 @@ const MODELOS = [
   { label: 'Clásico',     value: 'Clasico' },
   { label: 'Charol',      value: 'Charol' },
 ];
-const COLORES_PRINCIPALES = [
-  'Negro','Roble','Crudo','Chocolate','Envejecido',
-].map(c => ({ label: c, value: c }));
 
 /* ─────────────────────────────────────────────
    STEP CONFIG  (for the stepper header)
@@ -338,23 +331,118 @@ const Select = ({ value, onChange, options, placeholder, error, disabled }) => (
 );
 
 /* ─────────────────────────────────────────────
-   COLOR CHIP SELECTOR
+   COLOR CHIP SELECTOR  (con opción de agregar)
 ───────────────────────────────────────────── */
-const ColorChips = ({ options, value, onChange }) => (
-  <div className="pf-color-group" role="group">
-    {options.map(o => (
-      <button
-        key={o.value}
-        type="button"
-        className={`pf-color-chip${value === o.value ? ' selected' : ''}`}
-        onClick={() => onChange(value === o.value ? null : o.value)}
-        aria-pressed={value === o.value}
-      >
-        {o.label}
-      </button>
-    ))}
-  </div>
-);
+const ColorChipsWithAdd = ({ options, value, onChange, onAddColor }) => {
+  const [adding, setAdding] = useState(false);
+  const [nuevo, setNuevo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
+
+  const handleAdd = async () => {
+    const nombre = nuevo.trim();
+    if (!nombre) return;
+    setSaving(true);
+    const result = await onAddColor(nombre);
+    if (result) { onChange(result); setNuevo(''); setAdding(false); }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      <div className="pf-color-group" role="group">
+        {options.map(o => (
+          <button key={o.value} type="button"
+            className={`pf-color-chip${value === o.value ? ' selected' : ''}`}
+            onClick={() => onChange(value === o.value ? null : o.value)}
+            aria-pressed={value === o.value}>
+            {o.label}
+          </button>
+        ))}
+        {!adding && (
+          <button type="button" className="pf-color-chip"
+            onClick={() => setAdding(true)}
+            style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}>
+            + Nuevo
+          </button>
+        )}
+      </div>
+      {adding && (
+        <div style={{ display:'flex', gap:8, marginTop:10, alignItems:'center' }}>
+          <input ref={inputRef} className="pf-input" style={{ flex:1, padding:'8px 12px' }}
+            placeholder="Nombre del color..."
+            value={nuevo} onChange={e => setNuevo(e.target.value)}
+            onKeyDown={e => { if (e.key==='Enter') handleAdd(); if (e.key==='Escape') { setAdding(false); setNuevo(''); } }}
+          />
+          <button type="button" className="pf-btn pf-btn-primary pf-btn-sm"
+            onClick={handleAdd} disabled={saving || !nuevo.trim()}>
+            {saving ? <span className="pf-spinner" style={{width:12,height:12}} /> : 'Agregar'}
+          </button>
+          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm"
+            onClick={() => { setAdding(false); setNuevo(''); }}>
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
+   SELECT  (con opción de agregar nuevo color)
+───────────────────────────────────────────── */
+const SelectWithAdd = ({ value, onChange, options, placeholder, error, onAddColor }) => {
+  const [adding, setAdding] = useState(false);
+  const [nuevo, setNuevo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
+
+  const handleSelectChange = (val) => {
+    if (val === '__ADD__') { setAdding(true); }
+    else onChange(val || null);
+  };
+
+  const handleAdd = async () => {
+    const nombre = nuevo.trim();
+    if (!nombre) return;
+    setSaving(true);
+    const result = await onAddColor(nombre);
+    if (result) { onChange(result); setNuevo(''); setAdding(false); }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      <div className="pf-select-wrap">
+        <select className={`pf-select${error ? ' error' : ''}`}
+          value={value ?? ''} onChange={e => handleSelectChange(e.target.value)}>
+          <option value="" disabled>{placeholder}</option>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="__ADD__">＋ Agregar nuevo color...</option>
+        </select>
+      </div>
+      {adding && (
+        <div style={{ display:'flex', gap:8, marginTop:8, alignItems:'center' }}>
+          <input ref={inputRef} className="pf-input" style={{ flex:1, padding:'8px 12px' }}
+            placeholder="Nombre del color..."
+            value={nuevo} onChange={e => setNuevo(e.target.value)}
+            onKeyDown={e => { if (e.key==='Enter') handleAdd(); if (e.key==='Escape') { setAdding(false); setNuevo(''); } }}
+          />
+          <button type="button" className="pf-btn pf-btn-primary pf-btn-sm"
+            onClick={handleAdd} disabled={saving || !nuevo.trim()}>
+            {saving ? <span className="pf-spinner" style={{width:12,height:12}} /> : 'Agregar'}
+          </button>
+          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm"
+            onClick={() => { setAdding(false); setNuevo(''); }}>✕</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────
    STEP PANELS
@@ -415,7 +503,7 @@ const StepInfo = ({ state, set, errors, categoriaApi }) => {
 };
 
 /* Step 2: Colores */
-const StepColores = ({ state, set, errors }) => {
+const StepColores = ({ state, set, errors, coloresApi, onAddColor }) => {
   const s = state;
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
@@ -425,28 +513,32 @@ const StepColores = ({ state, set, errors }) => {
       </div>
 
       <Field label="Color Principal" error={errors.colorPrincipal}>
-        <ColorChips options={COLORES_PRINCIPALES} value={s.colorPrincipal}
-          onChange={v => set('colorPrincipal', v)} />
+        <ColorChipsWithAdd options={coloresApi} value={s.colorPrincipal}
+          onChange={v => set('colorPrincipal', v)} onAddColor={onAddColor} />
       </Field>
 
       <hr className="pf-divider" />
 
       <div className="pf-grid-2">
         <Field label="Color Tejido" error={errors.colorTejido}>
-          <Select value={s.colorTejido} onChange={v => set('colorTejido', v)}
-            options={COLORES_CHOICES} placeholder="Seleccionar" error={errors.colorTejido} />
+          <SelectWithAdd value={s.colorTejido} onChange={v => set('colorTejido', v)}
+            options={coloresApi} placeholder="Seleccionar" error={errors.colorTejido}
+            onAddColor={onAddColor} />
         </Field>
         <Field label="Color Soga Rienda" error={errors.colorSogaRienda}>
-          <Select value={s.colorSogaRienda} onChange={v => set('colorSogaRienda', v)}
-            options={COLORES_CHOICES} placeholder="Seleccionar" error={errors.colorSogaRienda} />
+          <SelectWithAdd value={s.colorSogaRienda} onChange={v => set('colorSogaRienda', v)}
+            options={coloresApi} placeholder="Seleccionar" error={errors.colorSogaRienda}
+            onAddColor={onAddColor} />
         </Field>
         <Field label="Color Manzanos" error={errors.colorManzanos}>
-          <Select value={s.colorManzanos} onChange={v => set('colorManzanos', v)}
-            options={COLORES_CHOICES} placeholder="Seleccionar" error={errors.colorManzanos} />
+          <SelectWithAdd value={s.colorManzanos} onChange={v => set('colorManzanos', v)}
+            options={coloresApi} placeholder="Seleccionar" error={errors.colorManzanos}
+            onAddColor={onAddColor} />
         </Field>
         <Field label="Color Coronas" error={errors.colorCoronas}>
-          <Select value={s.colorCoronas} onChange={v => set('colorCoronas', v)}
-            options={COLORES_CHOICES} placeholder="Seleccionar" error={errors.colorCoronas} />
+          <SelectWithAdd value={s.colorCoronas} onChange={v => set('colorCoronas', v)}
+            options={coloresApi} placeholder="Seleccionar" error={errors.colorCoronas}
+            onAddColor={onAddColor} />
         </Field>
       </div>
 
@@ -455,13 +547,15 @@ const StepColores = ({ state, set, errors }) => {
           <hr className="pf-divider" />
           <div className="pf-grid-2">
             <Field label="Color Cordón" error={errors.colorCordon1}>
-              <Select value={s.colorCordon1} onChange={v => set('colorCordon1', v)}
-                options={COLORES_CHOICES} placeholder="Cordón principal" error={errors.colorCordon1} />
+              <SelectWithAdd value={s.colorCordon1} onChange={v => set('colorCordon1', v)}
+                options={coloresApi} placeholder="Cordón principal" error={errors.colorCordon1}
+                onAddColor={onAddColor} />
             </Field>
             {s.tipo === 'Tejido' && (
               <Field label="Color Cordón Combinado" optional>
-                <Select value={s.colorCordon2} onChange={v => set('colorCordon2', v)}
-                  options={COLORES_CHOICES} placeholder="Cordón combinado" />
+                <SelectWithAdd value={s.colorCordon2} onChange={v => set('colorCordon2', v)}
+                  options={coloresApi} placeholder="Cordón combinado"
+                  onAddColor={onAddColor} />
               </Field>
             )}
           </div>
@@ -564,6 +658,7 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
   const [errors, setErrors] = useState({});
   const [imagenes, setImagenes] = useState([]);
   const [categoriaApi, setCategoriaApi] = useState([]);
+  const [coloresApi, setColoresApi] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const set = (key, val) => {
@@ -571,12 +666,27 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
     if (errors[key]) setErrors(prev => { const n = {...prev}; delete n[key]; return n; });
   };
 
-  /* load categories */
+  /* load categories and colors */
   useEffect(() => {
     CategoriaService.getAllCategorias()
-      .then(res => setCategoriaApi(res.map(c => ({ label: c.nombre, value: c.id }))))
+      .then(res => setCategoriaApi((res?.results ?? res).map(c => ({ label: c.nombre, value: c.id }))))
       .catch(err => console.error('Error al cargar categorías:', err));
+    ColorService.getAllColores()
+      .then(res => setColoresApi(res.map(c => ({ label: c.nombre, value: c.nombre }))))
+      .catch(err => console.error('Error al cargar colores:', err));
   }, []);
+
+  const handleAddColor = async (nombre) => {
+    try {
+      const color = await ColorService.crearColor(nombre);
+      setColoresApi(prev => [...prev, { label: color.nombre, value: color.nombre }]
+        .sort((a, b) => a.label.localeCompare(b.label)));
+      return color.nombre;
+    } catch (e) {
+      console.error('Error al crear color:', e);
+      return null;
+    }
+  };
 
   /* cleanup blob urls */
   useEffect(() => () => imagenes.forEach(i => URL.revokeObjectURL(i.preview)), [imagenes]);
@@ -689,7 +799,7 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
         {/* Panel */}
         <div ref={panelRef} style={{ overflowY:'auto', maxHeight:'calc(80vh - 160px)', paddingRight: 4 }}>
           {step === 1 && <StepInfo  state={state} set={set} errors={errors} categoriaApi={categoriaApi} />}
-          {step === 2 && <StepColores state={state} set={set} errors={errors} />}
+          {step === 2 && <StepColores state={state} set={set} errors={errors} coloresApi={coloresApi} onAddColor={handleAddColor} />}
           {step === 3 && (
             <StepImagenes
               imagenes={imagenes} onAdd={handleAddFiles}
