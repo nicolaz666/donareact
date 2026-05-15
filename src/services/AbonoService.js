@@ -8,7 +8,7 @@ const AbonoService = {
 
     async getAllAbonos(){
       const response = await axios.get(baseUrl);
-      return response
+      return response.data?.results ?? response.data;
     },
 
     async crearAbono(abono){

@@ -7,7 +7,7 @@ const baseUrl = buildApiUrl('categorias/');
 const CategoriaService = {
   async getAllCategorias() {
     const response = await axios.get(baseUrl);
-    return response.data;
+    return response.data?.results ?? response.data;
   },
 
   async crearCategoria(categoria) {

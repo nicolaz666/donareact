@@ -17,7 +17,7 @@ const VentasService = {
   async getAllVentas() {
     try {
       const response = await axios.get(baseUrl);
-      return response.data;
+      return response.data?.results ?? response.data;
     } catch (error) {
       console.error('Error al obtener ventas:', error);
       throw error;

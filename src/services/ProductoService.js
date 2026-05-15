@@ -7,7 +7,7 @@ const baseUrl = buildApiUrl('productos/');
 const ProductoService = {
   async getAllProductos() {
     const response = await axios.get(baseUrl);
-    return response.data;
+    return response.data?.results ?? response.data;
   },
 
   async crearProducto(Producto) {

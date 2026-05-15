@@ -2,12 +2,12 @@ import axios from 'axios';
 
 import { buildApiUrl } from '../config/api';
 
-const baseUrl = buildApiUrl('Unidadproductos/'); // Ajusta la URL según tu API
+const baseUrl = buildApiUrl('unidadproductos/');
 
 const UnidadProductoService = {
   async getAllUnidadProductos() {
     const response = await axios.get(baseUrl);
-    return response.data;
+    return response.data?.results ?? response.data;
   },
 
   async crearUnidadProducto(unidad) {

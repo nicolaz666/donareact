@@ -7,7 +7,7 @@ const baseUrl = buildApiUrl('clientes/');
 const ClienteService = {
   async getAllClientes() {
     const response = await axios.get(baseUrl);
-    return response.data;
+    return response.data?.results ?? response.data;
   },
 
   async crearCliente(cliente) {
