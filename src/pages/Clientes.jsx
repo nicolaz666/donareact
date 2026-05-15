@@ -3,7 +3,7 @@ import { Dialog } from 'primereact/dialog';
 import ClienteService from '../services/ClienteService';
 import ClienteForm from './ClienteForm';
 import ClienteFormEdit from './ClienteFormEdit';
-import DireccionForm from './DireccionForm';
+import DireccionesModal from './DireccionesModal';
 import { ResponsiveTableWrapper, ActionButtons, CardItem } from '../components/ui/table';
 
 const ROWS_PER_PAGE = 8;
@@ -11,11 +11,9 @@ const ROWS_PER_PAGE = 8;
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-  const [displayModal, setDisplayModal] = useState(false);
   const [displayModalClientes, setDisplayModalClientes] = useState(false);
   const [displayModalEditarClientes, setDisplayModalEditarClientes] = useState(false);
   const [displayModalDirecciones, setDisplayModalDirecciones] = useState(false);
-  const [direccionesSeleccionadas, setDireccionesSeleccionadas] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -36,23 +34,9 @@ const Clientes = () => {
   };
 
   const abrirModalDirecciones = (rowData) => {
-    setDireccionesSeleccionadas(rowData.direcciones);
-    setDisplayModal(true);
+    setClienteSeleccionado(rowData);
+    setDisplayModalDirecciones(true);
   };
-
-  const contenidoModalDirecciones = () =>
-    direccionesSeleccionadas.map((dir, index) => (
-      <div key={index} className="flex justify-center items-center">
-        <div className='border-solid p-4 w-64 border-2 border-indigo-700 m-2 rounded'>
-          <h4><strong>Destinatario:&nbsp;&nbsp;</strong>{dir.destinatario}</h4>
-          <h4><strong>Celular:&nbsp;&nbsp;</strong>{dir.celular}</h4>
-          <h4><strong>País:&nbsp;&nbsp;</strong>{dir.pais}</h4>
-          <h4><strong>Departamento:&nbsp;&nbsp;</strong>{dir.departamento}</h4>
-          <h4><strong>Ciudad:&nbsp;&nbsp;</strong>{dir.ciudad}</h4>
-          <h4><strong>Nomenclatura:&nbsp;&nbsp;</strong>{dir.nomenclatura}</h4>
-        </div>
-      </div>
-    ));
 
   // ── Table config ─────────────────────────────────────────────────
 
@@ -72,46 +56,19 @@ const Clientes = () => {
   const handleSearch = (val) => { setSearchTerm(val); setCurrentPage(1); };
 
   const DireccionButtons = ({ rowData, variant = "icon" }) => {
-    const tieneDir = rowData.direcciones?.length > 0;
-    if (variant === "full") {
-      return (
-        <div style={{ display: "grid", gridTemplateColumns: tieneDir ? "1fr 1fr" : "1fr", gap: "8px" }}>
-          {tieneDir && (
-            <button
-              onClick={() => abrirModalDirecciones(rowData)}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 12px", borderRadius: "9px", border: "1px solid #fde68a", background: "#fffbeb", color: "#d97706", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}
-            >
-              Ver
-            </button>
-          )}
-          <button
-            onClick={() => { setClienteSeleccionado(rowData); setDisplayModalDirecciones(true); }}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 12px", borderRadius: "9px", border: "1px solid #d1fae5", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}
-          >
-            + Agregar
-          </button>
-        </div>
-      );
-    }
+    const count = rowData.direcciones?.length ?? 0;
+    const label = count > 0 ? `${count} dirección${count > 1 ? 'es' : ''}` : 'Direcciones';
+    const style = {
+      display: "flex", alignItems: "center", gap: "5px",
+      padding: variant === "full" ? "9px 12px" : "5px 10px",
+      borderRadius: "9px", border: "1px solid #e0e7ff",
+      background: "#eef2ff", color: "#4f46e5",
+      cursor: "pointer", fontSize: variant === "full" ? "12px" : "11.5px", fontWeight: 600,
+    };
     return (
-      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-        {tieneDir ? (
-          <button
-            onClick={() => abrirModalDirecciones(rowData)}
-            style={{ padding: "5px 10px", borderRadius: "8px", border: "1px solid #fde68a", background: "#fffbeb", color: "#d97706", cursor: "pointer", fontSize: "11.5px", fontWeight: 600 }}
-          >
-            Ver direcciones
-          </button>
-        ) : (
-          <span style={{ fontSize: "11.5px", color: "#94a3b8" }}>Sin direcciones</span>
-        )}
-        <button
-          onClick={() => { setClienteSeleccionado(rowData); setDisplayModalDirecciones(true); }}
-          style={{ padding: "5px 10px", borderRadius: "8px", border: "1px solid #d1fae5", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontSize: "11.5px", fontWeight: 600 }}
-        >
-          + Agregar
-        </button>
-      </div>
+      <button style={style} onClick={() => abrirModalDirecciones(rowData)}>
+        📍 {label}
+      </button>
     );
   };
 
@@ -191,16 +148,6 @@ const Clientes = () => {
       />
 
       <Dialog
-        header="Direcciones"
-        visible={displayModal}
-        onHide={() => setDisplayModal(false)}
-        breakpoints={{ '960px': '75vw', '640px': '90vw' }}
-        style={{ width: '30vw' }}
-      >
-        {contenidoModalDirecciones()}
-      </Dialog>
-
-      <Dialog
         header="Agregar Cliente"
         visible={displayModalClientes}
         onHide={() => setDisplayModalClientes(false)}
@@ -226,20 +173,12 @@ const Clientes = () => {
         />
       </Dialog>
 
-      <Dialog
-        header="Agregar Direccion"
+      <DireccionesModal
         visible={displayModalDirecciones}
         onHide={() => setDisplayModalDirecciones(false)}
-        breakpoints={{ '960px': '75vw', '640px': '90vw' }}
-        style={{ width: '50vw' }}
-        contentStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
-      >
-        <DireccionForm
-          clienteId={clienteSeleccionado?.id}
-          mostrarModal={setDisplayModalDirecciones}
-          cargarClientes={cargarClientes}
-        />
-      </Dialog>
+        cliente={clienteSeleccionado}
+        onUpdate={cargarClientes}
+      />
     </div>
   );
 };

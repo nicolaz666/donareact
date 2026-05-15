@@ -31,9 +31,8 @@ const DireccionService = {
     return respuesta.data;
   },
 
-  eliminarDireccionDeCliente: async (clienteId, direccionId) => {
-    const url = buildApiUrl(`direcciones/clientes/${clienteId}/direcciones/${direccionId}`);
-    const respuesta = await axios.delete(url);
+  eliminarDireccion: async (id) => {
+    const respuesta = await axios.delete(`${API_URL}${id}/`);
     return respuesta.data;
   },
 };
