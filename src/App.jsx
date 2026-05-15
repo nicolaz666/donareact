@@ -6,6 +6,7 @@ import Categorias from "./pages/Categorias/Categorias"
 import MostrarVentas from "./pages/MostrarVentas"
 import Producto from "./pages/Productos/Producto"
 import AuthService from './services/AuthService';
+import './services/axiosConfig';
 import Login from './pages/Auth/Login';
 
 function ProtectedRoute() {
