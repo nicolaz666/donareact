@@ -368,47 +368,37 @@ function VentasForm({ mostrarModal, cargarVentas }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Nueva Venta</h1>
-          <p className="text-gray-600">Completa los datos para registrar una nueva venta</p>
-        </div>
-
+    <div className="p-4 sm:p-6">
         {successMessage && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
-            <div className="text-green-600 mr-3">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <span className="text-green-800 font-medium">{successMessage}</span>
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-green-800 font-medium text-sm">{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-            <div className="text-red-600 mr-3">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <span className="text-red-800 font-medium">{errorMessage}</span>
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-red-800 font-medium text-sm">{errorMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-xl shadow-xl border border-gray-100">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Información del Cliente y Fecha */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              Información del Cliente
+              Cliente y Entrega
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="cliente" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="cliente" className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Cliente *
                 </label>
                 <select
@@ -416,32 +406,25 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                   value={ventaCliente}
                   onChange={(e) => {
                     setVentaCliente(e.target.value);
-                    if (errors.ventaCliente) {
-                      setErrors(prev => ({ ...prev, ventaCliente: '' }));
-                    }
+                    if (errors.ventaCliente) setErrors(prev => ({ ...prev, ventaCliente: '' }));
                   }}
-                  className={`w-full rounded-lg border ${
+                  className={`w-full rounded-xl border ${
                     errors.ventaCliente ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 shadow-sm placeholder-gray-400
-                           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  } bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                 >
-                  <option value="" disabled>
-                    Selecciona un cliente
-                  </option>
+                  <option value="" disabled>Selecciona un cliente</option>
                   {clientes.map((cliente) => (
                     <option key={cliente.id} value={cliente.id}>
                       {formatearNombreCliente(cliente)}
                     </option>
                   ))}
                 </select>
-                {errors.ventaCliente && (
-                  <p className="mt-1 text-sm text-red-600">{errors.ventaCliente}</p>
-                )}
+                {errors.ventaCliente && <p className="mt-1 text-xs text-red-600">{errors.ventaCliente}</p>}
               </div>
 
               <div>
-                <label htmlFor="fecha_entrega" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Fecha de Entrega Estimada *
+                <label htmlFor="fecha_entrega" className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Fecha de Entrega *
                 </label>
                 <input
                   id="fecha_entrega"
@@ -449,76 +432,67 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                   value={fechaEntregaEstimada}
                   onChange={(e) => {
                     setFechaEntregaEstimada(e.target.value);
-                    if (errors.fechaEntregaEstimada) {
-                      setErrors(prev => ({ ...prev, fechaEntregaEstimada: '' }));
-                    }
+                    if (errors.fechaEntregaEstimada) setErrors(prev => ({ ...prev, fechaEntregaEstimada: '' }));
                   }}
                   min={new Date().toISOString().split('T')[0]}
-                  className={`w-full rounded-lg border ${
+                  className={`w-full rounded-xl border ${
                     errors.fechaEntregaEstimada ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 shadow-sm
-                           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  } bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                 />
-                {errors.fechaEntregaEstimada && (
-                  <p className="mt-1 text-sm text-red-600">{errors.fechaEntregaEstimada}</p>
-                )}
+                {errors.fechaEntregaEstimada && <p className="mt-1 text-xs text-red-600">{errors.fechaEntregaEstimada}</p>}
               </div>
             </div>
           </div>
 
           {/* Selector de productos */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              Selección de Productos
+              Agregar Productos
             </h2>
-            <VentasFormSelector 
-              productos={productos} 
-              onAddProduct={handleAddProduct} 
-              refreshTrigger={refreshUnidades} 
+            <VentasFormSelector
+              productos={productos}
+              onAddProduct={handleAddProduct}
+              refreshTrigger={refreshUnidades}
             />
-            {errors.selectedProducts && (
-              <p className="mt-2 text-sm text-red-600">{errors.selectedProducts}</p>
-            )}
+            {errors.selectedProducts && <p className="mt-2 text-xs text-red-600">{errors.selectedProducts}</p>}
           </div>
 
           {/* Lista de productos seleccionados */}
           {selectedProducts.length > 0 && (
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 4h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                Productos Seleccionados ({selectedProducts.length})
+                Productos ({selectedProducts.length})
               </h2>
               <VentasFormList
                 products={selectedProducts}
                 onQuantityChange={handleQuantityChange}
                 onRemove={handleRemoveProduct}
               />
-              {errors.quantities && (
-                <p className="mt-2 text-sm text-red-600">{errors.quantities}</p>
-              )}
+              {errors.quantities && <p className="mt-2 text-xs text-red-600">{errors.quantities}</p>}
             </div>
           )}
 
           {/* Abono y comentarios */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Detalles Adicionales
+              Pago y Notas
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="abono" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Abono (Opcional)
+                <label htmlFor="abono" className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Abono Inicial (Opcional)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">$</span>
                   <input
                     id="abono"
                     type="number"
@@ -527,23 +501,20 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                     step="0.01"
                     value={abono}
                     onChange={handleAbonoChange}
-                    className={`w-full pl-8 rounded-lg border ${
+                    className={`w-full pl-7 pr-4 py-3 rounded-xl border ${
                       errors.abono ? 'border-red-300' : 'border-gray-300'
-                    } bg-white px-4 py-3 shadow-sm
-                             focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                    } bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                     placeholder="0.00"
                   />
                 </div>
-                {errors.abono && (
-                  <p className="mt-1 text-sm text-red-600">{errors.abono}</p>
-                )}
-                {total > 0 && (
-                  <p className="mt-1 text-xs text-gray-500">Máximo: ${total.toFixed(2)}</p>
+                {errors.abono && <p className="mt-1 text-xs text-red-600">{errors.abono}</p>}
+                {total > 0 && !errors.abono && (
+                  <p className="mt-1 text-xs text-gray-400">Máx: ${total.toFixed(2)}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="comentarios" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="comentarios" className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Comentarios (Opcional)
                 </label>
                 <textarea
@@ -552,24 +523,17 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                   value={comentarios}
                   onChange={(e) => {
                     setComentarios(e.target.value);
-                    if (errors.comentarios) {
-                      setErrors(prev => ({ ...prev, comentarios: '' }));
-                    }
+                    if (errors.comentarios) setErrors(prev => ({ ...prev, comentarios: '' }));
                   }}
                   maxLength={500}
-                  className={`w-full rounded-lg border ${
+                  className={`w-full rounded-xl border ${
                     errors.comentarios ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 shadow-sm resize-y
-                           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
-                  placeholder="Comentarios adicionales sobre la venta..."
+                  } bg-white px-4 py-3 text-sm shadow-sm resize-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  placeholder="Notas sobre la venta..."
                 />
                 <div className="flex justify-between mt-1">
-                  {errors.comentarios && (
-                    <p className="text-sm text-red-600">{errors.comentarios}</p>
-                  )}
-                  <p className="text-xs text-gray-500 ml-auto">
-                    {comentarios.length}/500 caracteres
-                  </p>
+                  {errors.comentarios && <p className="text-xs text-red-600">{errors.comentarios}</p>}
+                  <p className="text-xs text-gray-400 ml-auto">{comentarios.length}/500</p>
                 </div>
               </div>
             </div>
@@ -577,54 +541,51 @@ function VentasForm({ mostrarModal, cargarVentas }) {
 
           {/* Resumen de la venta */}
           {selectedProducts.length > 0 && (
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-lg border border-indigo-200">
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-xl border border-indigo-200">
               <VentasFormSummary products={selectedProducts} total={total} abono={abono} />
             </div>
           )}
 
           {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-end pt-6 border-t border-gray-200">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={resetForm}
               disabled={submitting}
-              className="inline-flex items-center justify-center px-6 py-3 border border-gray-300
-                       text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none
-                       focus:ring-2 focus:ring-gray-500 transition-all disabled:opacity-50
-                       disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center px-5 py-3 border border-gray-300
+                       text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 focus:outline-none
+                       focus:ring-2 focus:ring-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Limpiar Formulario
+              Limpiar
             </button>
 
             <button
               type="submit"
               disabled={submitting || selectedProducts.length === 0}
-              className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600
-                       text-white font-semibold px-8 py-3 rounded-lg hover:from-indigo-700 hover:to-blue-700
+              className="flex-1 inline-flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600
+                       text-white text-sm font-semibold px-8 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700
                        focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl
-                       transform hover:-translate-y-0.5"
+                       disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creando Venta...
+                  Creando...
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Crear Venta
+                  Registrar Venta
                 </>
               )}
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 }

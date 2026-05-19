@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import VentasService from "../../services/VentasService";
 import AbonoService from "../../services/AbonoService";
 import detalleVentasService from "../../services/detallleVentasService";
@@ -31,6 +31,13 @@ const VentasTable = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   const descripcionRequestIdRef = useRef(0);
   const unidadesRequestIdRef = useRef(0);
@@ -250,12 +257,20 @@ const VentasTable = () => {
       />
 
       <Dialog
-        header="Agregar Ventas"
+        header="Nueva Venta"
         visible={mostrarModal}
         onHide={() => setMostrarModal(false)}
-        breakpoints={{ '960px': '75vw', '640px': '90vw' }}
-        style={{ width: '50vw' }}
-        contentStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+        maximized={isMobile}
+        style={isMobile ? {} : { width: '90vw', maxWidth: '900px' }}
+        contentStyle={{
+          padding: 0,
+          overflowY: 'auto',
+          ...(isMobile ? { height: 'calc(100vh - 60px)' } : { maxHeight: 'calc(90vh - 60px)' }),
+        }}
+        pt={{
+          root: { style: isMobile ? { borderRadius: 0 } : { borderRadius: '16px' } },
+          header: { style: { borderRadius: isMobile ? 0 : '16px 16px 0 0', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+        }}
       >
         <VentasForm mostrarModal={setMostrarModal} cargarVentas={cargarVentas} />
       </Dialog>
