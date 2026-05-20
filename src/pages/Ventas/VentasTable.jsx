@@ -293,7 +293,7 @@ const VentasTable = () => {
       </Dialog>
 
       <Dialog
-        header={`Detalle Completo de la Venta #${rowDataDescripcion?.id || ''}`}
+        header={`Detalle de la Venta #${rowDataDescripcion?.id || ''}`}
         visible={mostrarModalDescripcion}
         onHide={() => {
           setMostrarModalDescripcion(false);
@@ -301,9 +301,17 @@ const VentasTable = () => {
           setDetallesVenta([]);
           setRowDataDescripcion(null);
         }}
-        breakpoints={{ '960px': '90vw', '640px': '95vw' }}
-        style={{ width: '80vw' }}
-        contentStyle={{ maxHeight: '85vh', overflowY: 'auto' }}
+        maximized={isMobile}
+        style={isMobile ? {} : { width: '85vw', maxWidth: '860px' }}
+        contentStyle={{
+          padding: 0,
+          overflowY: 'auto',
+          ...(isMobile ? { height: 'calc(100vh - 60px)' } : { maxHeight: 'calc(90vh - 60px)' }),
+        }}
+        pt={{
+          root: { style: isMobile ? { borderRadius: 0 } : { borderRadius: '16px' } },
+          header: { style: { borderRadius: isMobile ? 0 : '16px 16px 0 0', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+        }}
       >
         <VentasDescripcionModal
           rowData={rowDataDescripcion}
@@ -315,16 +323,24 @@ const VentasTable = () => {
       </Dialog>
 
       <Dialog
-        header={`Unidades del Producto ${productoSeleccionado ? `#${productoSeleccionado.id}` : ''}`}
+        header={`Unidades — ${productoSeleccionado ? `${productoSeleccionado.tipo} #${productoSeleccionado.id}` : ''}`}
         visible={mostrarModalUnidades}
         onHide={() => {
           setMostrarModalUnidades(false);
           setUnidadesProducto([]);
           setProductoSeleccionado(null);
         }}
-        breakpoints={{ '960px': '85vw', '640px': '95vw' }}
-        style={{ width: '70vw' }}
-        contentStyle={{ maxHeight: '80vh', overflowY: 'auto' }}
+        maximized={isMobile}
+        style={isMobile ? {} : { width: '75vw', maxWidth: '680px' }}
+        contentStyle={{
+          padding: 0,
+          overflowY: 'auto',
+          ...(isMobile ? { height: 'calc(100vh - 60px)' } : { maxHeight: 'calc(90vh - 60px)' }),
+        }}
+        pt={{
+          root: { style: isMobile ? { borderRadius: 0 } : { borderRadius: '16px' } },
+          header: { style: { borderRadius: isMobile ? 0 : '16px 16px 0 0', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+        }}
       >
         <VentasUnidadesModal
           productoSeleccionado={productoSeleccionado}

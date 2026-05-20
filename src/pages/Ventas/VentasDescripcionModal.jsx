@@ -1,217 +1,281 @@
-import { Button } from 'primereact/button';
 import { StatusBadge } from "../../components/ui/table";
 import { formatearFecha, formatearNumero } from "../../utils/formatters";
 
+const SectionHeader = ({ icon, title, count }) => (
+  <div className="flex items-center gap-2 mb-3">
+    <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+      {icon}
+    </div>
+    <h3 className="text-sm font-bold text-gray-800 flex-1">{title}</h3>
+    {count !== undefined && (
+      <span className="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">{count}</span>
+    )}
+  </div>
+);
+
+const InfoRow = ({ label, value, accent }) => (
+  <div className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-b-0">
+    <span className="text-xs text-gray-500 font-medium flex-shrink-0">{label}</span>
+    <span className={`text-xs font-semibold text-right break-all ${accent || 'text-gray-800'}`}>{value}</span>
+  </div>
+);
+
 const VentasDescripcionModal = ({ rowData, abonosVenta, detallesVenta, loading, onVerUnidades }) => {
-  if (!rowData) return <p>No hay datos para mostrar</p>;
+  if (!rowData) return <p className="p-6 text-gray-500 text-center">No hay datos para mostrar</p>;
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem' }}>
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mb-4"></div>
-        <p style={{ color: '#666', fontSize: '1.1em' }}>Cargando información detallada...</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600"></div>
+        <p className="text-gray-500 text-sm">Cargando información...</p>
       </div>
     );
   }
 
   const totalAbonado = abonosVenta.reduce((sum, a) => sum + parseFloat(a.monto_abonado || 0), 0);
+  const saldo = Number(rowData.debe || 0);
+  const total = Number(rowData.total || 0);
+  const pctPagado = total > 0 ? Math.min(100, ((totalAbonado / total) * 100)) : 0;
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div className="p-3 sm:p-5 space-y-4">
 
-      {/* Información General */}
-      <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333', borderBottom: '2px solid #4f46e5', paddingBottom: '0.5rem', fontSize: '1.2em' }}>
-          Información General
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div><strong>ID Venta:</strong> #{rowData.id}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <strong>Estado:</strong> <StatusBadge value={rowData.estado} />
+      {/* ── Información General ─────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <SectionHeader
+          icon={<svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+          title="Información General"
+        />
+        <div className="grid grid-cols-2 gap-x-4">
+          <InfoRow label="ID Venta" value={`#${rowData.id}`} accent="text-indigo-700" />
+          <div className="flex items-start justify-between gap-3 py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500 font-medium flex-shrink-0">Estado</span>
+            <StatusBadge value={rowData.estado} dot />
           </div>
-          <div><strong>Fecha Venta:</strong> {formatearFecha(rowData.fecha_venta)}</div>
-          <div><strong>Fecha Entrega:</strong> {formatearFecha(rowData.fecha_entrega_estimada)}</div>
+          <InfoRow label="Fecha Venta" value={formatearFecha(rowData.fecha_venta)} />
+          <InfoRow label="Fecha Entrega" value={formatearFecha(rowData.fecha_entrega_estimada)} />
         </div>
       </div>
 
-      {/* Información del Cliente */}
-      <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333', borderBottom: '2px solid #4f46e5', paddingBottom: '0.5rem', fontSize: '1.2em' }}>
-          Información del Cliente
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div><strong>Nombre:</strong> {rowData.cliente?.nombre || 'N/A'}</div>
-          <div><strong>Apellido:</strong> {rowData.cliente?.apellido || 'N/A'}</div>
-          <div><strong>Identificación:</strong> {rowData.cliente?.identificacion || 'N/A'}</div>
-          <div><strong>Total Ventas:</strong> {rowData.cliente?.total_ventas || 0}</div>
+      {/* ── Cliente ─────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <SectionHeader
+          icon={<svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+          title="Cliente"
+        />
+        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-indigo-700 font-bold text-sm">
+              {(rowData.cliente?.nombre?.[0] || '?').toUpperCase()}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-gray-900 text-sm truncate">
+              {rowData.cliente?.nombre || ''} {rowData.cliente?.apellido || ''}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              ID: {rowData.cliente?.identificacion || 'N/A'}
+            </p>
+          </div>
         </div>
+        <InfoRow label="Total de ventas" value={rowData.cliente?.total_ventas || 0} />
       </div>
 
-      {/* Detalles de Venta */}
-      <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333', borderBottom: '2px solid #4f46e5', paddingBottom: '0.5rem', fontSize: '1.2em' }}>
-          Detalles de Venta ({detallesVenta.length} items)
-        </h3>
+      {/* ── Detalles de Productos ───────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <SectionHeader
+          icon={<svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>}
+          title="Productos"
+          count={detallesVenta.length}
+        />
+
         {detallesVenta.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#4f46e5', color: 'white' }}>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.9em', width: '10%' }}>ID Venta</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.9em', width: '60%' }}>Productos</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'center', border: '1px solid #ddd', fontSize: '0.9em', width: '15%' }}>Cantidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detallesVenta.map((detalle, index) => (
-                  <tr key={detalle.id ?? detalle.producto?.id ?? index} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
-                    <td style={{ padding: '0.75rem', border: '1px solid #ddd', verticalAlign: 'top' }}>
-                      <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '4px', backgroundColor: '#dbeafe', fontSize: '0.9em', fontWeight: '500', color: '#1e40af' }}>
-                        #{detalle.venta || 'N/A'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
-                      <div style={{ backgroundColor: '#f9fafb', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                        {detalle.producto ? (
-                          <div style={{ fontSize: '0.9em', lineHeight: '1.6' }}>
-                            <p style={{ margin: '0.25rem 0' }}><strong style={{ color: '#4f46e5' }}>Producto ID:</strong> #{detalle.producto.id}</p>
-                            <p style={{ margin: '0.25rem 0' }}><strong style={{ color: '#4f46e5' }}>Categoría:</strong> {detalle.producto.categoria?.nombre || 'N/A'}</p>
-                            <p style={{ margin: '0.25rem 0' }}><strong style={{ color: '#4f46e5' }}>Tipo:</strong> {detalle.producto.tipo || 'N/A'}</p>
-                            <p style={{ margin: '0.25rem 0' }}><strong style={{ color: '#4f46e5' }}>Modelo:</strong> {detalle.producto.modelo || 'N/A'}</p>
-                            <p style={{ margin: '0.25rem 0' }}>
-                              <strong style={{ color: '#4f46e5' }}>Color Principal:</strong>
-                              <span style={{ marginLeft: '0.5rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#e5e7eb', fontSize: '0.85em' }}>
-                                {detalle.producto.colorPrincipal || 'N/A'}
-                              </span>
-                            </p>
-                            <p style={{ margin: '0.25rem 0' }}>
-                              <strong style={{ color: '#4f46e5' }}>Color Tejido:</strong>
-                              <span style={{ marginLeft: '0.5rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#e5e7eb', fontSize: '0.85em' }}>
-                                {detalle.producto.colorTejido || 'N/A'}
-                              </span>
-                            </p>
-                            <p style={{ margin: '0.25rem 0' }}><strong style={{ color: '#4f46e5' }}>Precio:</strong> ${formatearNumero(detalle.producto.precio || 0)}</p>
-                            {detalle.producto.observaciones && detalle.producto.observaciones !== 'No hay Observaciones' && (
-                              <p style={{ margin: '0.5rem 0 0.25rem 0', paddingTop: '0.5rem', borderTop: '1px dashed #d1d5db', fontStyle: 'italic', color: '#6b7280' }}>
-                                <strong style={{ color: '#4f46e5' }}>Observaciones:</strong> {detalle.producto.observaciones}
-                              </p>
-                            )}
-                            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
-                              <Button
-                                label="Ver Unidades"
-                                icon="pi pi-box"
-                                size="small"
-                                severity="info"
-                                outlined
-                                onClick={() => onVerUnidades(detalle.producto.id, detalle.producto, detalle.id, detalle.venta)}
-                                style={{ width: '100%', justifyContent: 'center' }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: '1rem', textAlign: 'center', color: '#9ca3af', fontStyle: 'italic' }}>
-                            <p style={{ margin: 0 }}>Información del producto no disponible</p>
-                            <p style={{ margin: '0.25rem 0', fontSize: '0.85em' }}>ID Producto: #{detalle.producto_id || 'N/A'}</p>
-                          </div>
-                        )}
+          <div className="space-y-3">
+            {detallesVenta.map((detalle, index) => (
+              <div key={detalle.id ?? index} className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+                {detalle.producto ? (
+                  <>
+                    {/* Cabecera del producto */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-gray-900 text-sm truncate">
+                          {detalle.producto.tipo} — {detalle.producto.modelo}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {detalle.producto.categoria?.nombre || 'Sin categoría'}
+                        </p>
                       </div>
-                    </td>
-                    <td style={{ padding: '0.75rem', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold', fontSize: '1.1em', color: '#059669', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'inline-block', padding: '0.5rem 1rem', backgroundColor: '#d1fae5', borderRadius: '8px', border: '2px solid #10b981' }}>
-                        {detalle.cantidad || 0}
+                      <div className="flex-shrink-0 bg-green-50 border-2 border-green-200 rounded-xl px-3 py-1.5 text-center">
+                        <p className="text-lg font-bold text-green-700 leading-none">{detalle.cantidad || 0}</p>
+                        <p className="text-xs text-green-600 leading-none mt-0.5">uds.</p>
                       </div>
-                      <div style={{ fontSize: '0.75em', color: '#6b7280', marginTop: '0.25rem' }}>unidades</div>
-                    </td>
-                  </tr>
-                ))}
-                <tr style={{ backgroundColor: '#e0f2fe', fontWeight: 'bold', fontSize: '1.05em' }}>
-                  <td colSpan="2" style={{ padding: '1rem', textAlign: 'right', border: '1px solid #ddd' }}>Total de Unidades:</td>
-                  <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #ddd', fontSize: '1.2em', color: '#059669', fontWeight: 'bold' }}>
-                    <div style={{ display: 'inline-block', padding: '0.5rem 1rem', backgroundColor: '#d1fae5', borderRadius: '8px', border: '2px solid #10b981' }}>
-                      {detallesVenta.reduce((sum, d) => sum + (d.cantidad || 0), 0)}
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'white', borderRadius: '4px', border: '1px dashed #ccc' }}>
-            <p style={{ color: '#666', fontStyle: 'italic', margin: 0 }}>No hay detalles de venta registrados</p>
-          </div>
-        )}
-      </div>
 
-      {/* Historial de Abonos */}
-      <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333', borderBottom: '2px solid #4f46e5', paddingBottom: '0.5rem', fontSize: '1.2em' }}>
-          Historial de Abonos ({abonosVenta.length})
-        </h3>
-        {abonosVenta.length > 0 ? (
-          <>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#4f46e5', color: 'white' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>ID Abono</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>ID Venta</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Fecha</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>Monto</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Método</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Comentario</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {abonosVenta.map((abono, index) => (
-                    <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
-                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><strong>#{abono.id || 'N/A'}</strong></td>
-                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
-                        <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '4px', backgroundColor: '#dbeafe', fontSize: '0.9em', fontWeight: '500', color: '#1e40af' }}>
-                          Venta #{abono.venta || 'N/A'}
+                    {/* Detalles del producto */}
+                    <div className="grid grid-cols-2 gap-x-3 text-xs mb-2">
+                      {detalle.producto.colorPrincipal && (
+                        <div className="flex items-center gap-1.5 py-1">
+                          <span className="text-gray-400">Color:</span>
+                          <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-medium truncate">
+                            {detalle.producto.colorPrincipal}
+                          </span>
+                        </div>
+                      )}
+                      {detalle.producto.colorTejido && (
+                        <div className="flex items-center gap-1.5 py-1">
+                          <span className="text-gray-400">Tejido:</span>
+                          <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-medium truncate">
+                            {detalle.producto.colorTejido}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 py-1">
+                        <span className="text-gray-400">Precio:</span>
+                        <span className="text-indigo-700 font-bold">${formatearNumero(detalle.producto.precio || 0)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 py-1">
+                        <span className="text-gray-400">Subtotal:</span>
+                        <span className="text-indigo-700 font-bold">
+                          ${formatearNumero((detalle.producto.precio || 0) * (detalle.cantidad || 0))}
                         </span>
-                      </td>
-                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{formatearFecha(abono.fecha_abono)}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd', color: '#16a34a', fontWeight: 'bold' }}>${formatearNumero(abono.monto_abonado)}</td>
-                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{abono.metodo_pago || 'No especificado'}</td>
-                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{abono.comentario || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+
+                    {detalle.producto.observaciones && detalle.producto.observaciones !== 'No hay Observaciones' && (
+                      <p className="text-xs text-gray-500 italic border-t border-gray-200 pt-2 mb-2">
+                        {detalle.producto.observaciones}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={() => onVerUnidades(detalle.producto.id, detalle.producto, detalle.id, detalle.venta)}
+                      className="w-full mt-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 active:bg-indigo-200 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      Ver unidades vendidas
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-400 italic text-center py-3">
+                    Producto no disponible · ID #{detalle.producto_id || 'N/A'}
+                  </p>
+                )}
+              </div>
+            ))}
+
+            {/* Total unidades */}
+            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span className="text-sm font-semibold text-gray-700">Total de unidades</span>
+              <span className="text-xl font-bold text-green-700">
+                {detallesVenta.reduce((sum, d) => sum + (d.cantidad || 0), 0)}
+              </span>
             </div>
-            <div style={{ padding: '1rem', backgroundColor: '#d1fae5', borderRadius: '6px', textAlign: 'right', fontWeight: 'bold', fontSize: '1.1em', border: '2px solid #10b981' }}>
-              Total Abonado: ${formatearNumero(totalAbonado)}
-            </div>
-          </>
-        ) : (
-          <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'white', borderRadius: '4px', border: '1px dashed #ccc' }}>
-            <p style={{ color: '#666', fontStyle: 'italic', margin: 0 }}>No hay abonos registrados para esta venta</p>
           </div>
+        ) : (
+          <p className="text-sm text-gray-400 italic text-center py-6 border border-dashed border-gray-200 rounded-xl">
+            No hay productos registrados
+          </p>
         )}
       </div>
 
-      {/* Resumen Financiero */}
-      <div style={{ padding: '1.5rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '2px solid #4f46e5', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333', borderBottom: '2px solid #4f46e5', paddingBottom: '0.5rem', fontSize: '1.2em' }}>
-          Resumen Financiero
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '1.1em' }}>
-          <div><strong>Total de la Venta:</strong></div>
-          <div style={{ textAlign: 'right', color: '#1e40af', fontWeight: 'bold' }}>${formatearNumero(rowData.total)}</div>
-          <div><strong>Total Abonado:</strong></div>
-          <div style={{ textAlign: 'right', color: '#16a34a', fontWeight: 'bold' }}>${formatearNumero(totalAbonado)}</div>
-          <div style={{ paddingTop: '0.75rem', borderTop: '2px solid #4f46e5', fontWeight: 'bold', fontSize: '1.3em' }}>Saldo Pendiente:</div>
-          <div style={{ textAlign: 'right', paddingTop: '0.75rem', borderTop: '2px solid #4f46e5', fontWeight: 'bold', fontSize: '1.3em', color: rowData.debe > 0 ? '#dc2626' : '#16a34a' }}>
-            ${formatearNumero(rowData.debe)}
+      {/* ── Historial de Abonos ──────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <SectionHeader
+          icon={<svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          title="Historial de Abonos"
+          count={abonosVenta.length}
+        />
+
+        {abonosVenta.length > 0 ? (
+          <div className="space-y-2">
+            {abonosVenta.map((abono, index) => (
+              <div key={index} className="bg-gray-50 rounded-xl border border-gray-100 p-3 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base font-bold text-green-700">${formatearNumero(abono.monto_abonado)}</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">{formatearFecha(abono.fecha_abono)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {abono.metodo_pago && (
+                      <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-medium">
+                        {abono.metodo_pago}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400">#{abono.id}</span>
+                  </div>
+                  {abono.comentario && (
+                    <p className="text-xs text-gray-500 mt-1 truncate">{abono.comentario}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span className="text-sm font-semibold text-gray-700">Total abonado</span>
+              <span className="text-lg font-bold text-green-700">${formatearNumero(totalAbonado)}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 italic text-center py-6 border border-dashed border-gray-200 rounded-xl">
+            Sin abonos registrados
+          </p>
+        )}
+      </div>
+
+      {/* ── Resumen Financiero ───────────────────────────── */}
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-200 p-4 shadow-sm">
+        <SectionHeader
+          icon={<svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+          title="Resumen Financiero"
+        />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-sm text-gray-600">Total de la venta</span>
+            <span className="text-sm font-bold text-indigo-700">${formatearNumero(total)}</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-sm text-gray-600">Total abonado</span>
+            <span className="text-sm font-bold text-green-600">${formatearNumero(totalAbonado)}</span>
+          </div>
+
+          {/* Barra de progreso */}
+          <div className="py-1">
+            <div className="w-full h-2 bg-white rounded-full overflow-hidden border border-gray-200">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${pctPagado}%`,
+                  background: pctPagado >= 100 ? '#16a34a' : '#6366f1',
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1 text-right">{pctPagado.toFixed(1)}% pagado</p>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t-2 border-indigo-200">
+            <span className="text-base font-bold text-gray-800">Saldo pendiente</span>
+            <span className={`text-xl font-extrabold ${saldo > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              ${formatearNumero(saldo)}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Comentarios */}
+      {/* ── Comentarios ─────────────────────────────────── */}
       {rowData.comentarios?.trim() && (
-        <div style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px solid #fbbf24' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '0.75rem', color: '#333', fontSize: '1.1em' }}>Comentarios</h3>
-          <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#666', lineHeight: '1.6' }}>{rowData.comentarios}</p>
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+          <SectionHeader
+            icon={<svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>}
+            title="Comentarios"
+          />
+          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{rowData.comentarios}</p>
         </div>
       )}
     </div>
