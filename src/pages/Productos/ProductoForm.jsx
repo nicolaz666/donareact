@@ -4,6 +4,8 @@ import ProductoService from '../../services/ProductoService';
 import CategoriaService from '../../services/CategoriaService';
 import GrupoImagenesService from '../../services/GrupoImagenesService';
 import ColorService from '../../services/ColorService';
+import TipoProductoService from '../../services/TipoProductoService';
+import ModeloProductoService from '../../services/ModeloProductoService';
 
 /* ─────────────────────────────────────────────
    CONSTANTS
@@ -396,6 +398,7 @@ const ColorChipsWithAdd = ({ options, value, onChange, onAddColor }) => {
 const SelectWithAddLocal = ({ value, onChange, options, placeholder, error, onAdd, addPlaceholder }) => {
   const [adding, setAdding] = useState(false);
   const [nuevo, setNuevo] = useState('');
+  const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
@@ -405,13 +408,13 @@ const SelectWithAddLocal = ({ value, onChange, options, placeholder, error, onAd
     else onChange(val || null);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const val = nuevo.trim();
     if (!val) return;
-    onAdd(val);
-    onChange(val);
-    setNuevo('');
-    setAdding(false);
+    setSaving(true);
+    const result = await onAdd(val);
+    if (result !== null) { onChange(val); setNuevo(''); setAdding(false); }
+    setSaving(false);
   };
 
   return (
@@ -435,11 +438,11 @@ const SelectWithAddLocal = ({ value, onChange, options, placeholder, error, onAd
             }}
           />
           <button type="button" className="pf-btn pf-btn-primary pf-btn-sm"
-            onClick={handleAdd} disabled={!nuevo.trim()}>
-            Agregar
+            onClick={handleAdd} disabled={saving || !nuevo.trim()}>
+            {saving ? <span className="pf-spinner" style={{width:12,height:12}} /> : 'Agregar'}
           </button>
           <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm"
-            onClick={() => { setAdding(false); setNuevo(''); }}>✕</button>
+            onClick={() => { setAdding(false); setNuevo(''); }} disabled={saving}>✕</button>
         </div>
       )}
     </div>
@@ -727,15 +730,15 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
   const [categoriaApi, setCategoriaApi] = useState([]);
   const [coloresApi, setColoresApi] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [tiposState, setTiposState]     = useState(TIPOS);
-  const [modelosState, setModelosState] = useState(MODELOS);
+  const [tiposState, setTiposState]     = useState([]);
+  const [modelosState, setModelosState] = useState([]);
 
   const set = (key, val) => {
     setState(prev => ({ ...prev, [key]: val }));
     if (errors[key]) setErrors(prev => { const n = {...prev}; delete n[key]; return n; });
   };
 
-  /* load categories and colors */
+  /* load categories, colors, tipos and modelos */
   useEffect(() => {
     CategoriaService.getAllCategorias()
       .then(res => setCategoriaApi((res?.results ?? res).map(c => ({ label: c.nombre, value: c.id }))))
@@ -743,6 +746,12 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
     ColorService.getAllColores()
       .then(res => setColoresApi(res.map(c => ({ label: c.nombre, value: c.nombre }))))
       .catch(err => console.error('Error al cargar colores:', err));
+    TipoProductoService.getAllTipos()
+      .then(res => setTiposState(res.map(t => ({ label: t.nombre, value: t.nombre }))))
+      .catch(err => console.error('Error al cargar tipos:', err));
+    ModeloProductoService.getAllModelos()
+      .then(res => setModelosState(res.map(m => ({ label: m.nombre, value: m.nombre }))))
+      .catch(err => console.error('Error al cargar modelos:', err));
   }, []);
 
   const handleAddColor = async (nombre) => {
@@ -757,12 +766,28 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
     }
   };
 
-  const handleAddTipo = (nombre) => {
-    setTiposState(prev => [...prev, { label: nombre, value: nombre }]);
+  const handleAddTipo = async (nombre) => {
+    try {
+      await TipoProductoService.crearTipo(nombre);
+      setTiposState(prev => [...prev, { label: nombre, value: nombre }]
+        .sort((a, b) => a.label.localeCompare(b.label)));
+      return nombre;
+    } catch (e) {
+      console.error('Error al crear tipo:', e);
+      return null;
+    }
   };
 
-  const handleAddModelo = (nombre) => {
-    setModelosState(prev => [...prev, { label: nombre, value: nombre }]);
+  const handleAddModelo = async (nombre) => {
+    try {
+      await ModeloProductoService.crearModelo(nombre);
+      setModelosState(prev => [...prev, { label: nombre, value: nombre }]
+        .sort((a, b) => a.label.localeCompare(b.label)));
+      return nombre;
+    } catch (e) {
+      console.error('Error al crear modelo:', e);
+      return null;
+    }
   };
 
   /* cleanup blob urls */
