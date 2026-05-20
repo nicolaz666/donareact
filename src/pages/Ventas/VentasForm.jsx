@@ -368,7 +368,7 @@ function VentasForm({ mostrarModal, cargarVentas }) {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-3 sm:p-5">
         {successMessage && (
           <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
             <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,8 +396,8 @@ function VentasForm({ mostrarModal, cargarVentas }) {
               </svg>
               Cliente y Entrega
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+            <div className="space-y-3">
+              <div className="min-w-0">
                 <label htmlFor="cliente" className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Cliente *
                 </label>
@@ -408,9 +408,9 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                     setVentaCliente(e.target.value);
                     if (errors.ventaCliente) setErrors(prev => ({ ...prev, ventaCliente: '' }));
                   }}
-                  className={`w-full rounded-xl border ${
+                  className={`w-full min-w-0 rounded-xl border ${
                     errors.ventaCliente ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  } bg-white px-3 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                 >
                   <option value="" disabled>Selecciona un cliente</option>
                   {clientes.map((cliente) => (
@@ -422,7 +422,7 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                 {errors.ventaCliente && <p className="mt-1 text-xs text-red-600">{errors.ventaCliente}</p>}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="fecha_entrega" className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Fecha de Entrega *
                 </label>
@@ -435,9 +435,10 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                     if (errors.fechaEntregaEstimada) setErrors(prev => ({ ...prev, fechaEntregaEstimada: '' }));
                   }}
                   min={new Date().toISOString().split('T')[0]}
-                  className={`w-full rounded-xl border ${
+                  style={{ colorScheme: 'light' }}
+                  className={`w-full min-w-0 box-border rounded-xl border ${
                     errors.fechaEntregaEstimada ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  } bg-white px-3 py-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                 />
                 {errors.fechaEntregaEstimada && <p className="mt-1 text-xs text-red-600">{errors.fechaEntregaEstimada}</p>}
               </div>
@@ -486,13 +487,13 @@ function VentasForm({ mostrarModal, cargarVentas }) {
               </svg>
               Pago y Notas
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+            <div className="space-y-3">
+              <div className="min-w-0">
                 <label htmlFor="abono" className="block text-xs font-semibold text-gray-600 mb-1.5">
-                  Abono Inicial (Opcional)
+                  Abono Inicial <span className="font-normal text-gray-400">(Opcional)</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none">$</span>
                   <input
                     id="abono"
                     type="number"
@@ -501,7 +502,7 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                     step="0.01"
                     value={abono}
                     onChange={handleAbonoChange}
-                    className={`w-full pl-7 pr-4 py-3 rounded-xl border ${
+                    className={`w-full min-w-0 box-border pl-7 pr-3 py-3 rounded-xl border ${
                       errors.abono ? 'border-red-300' : 'border-gray-300'
                     } bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                     placeholder="0.00"
@@ -513,22 +514,22 @@ function VentasForm({ mostrarModal, cargarVentas }) {
                 )}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="comentarios" className="block text-xs font-semibold text-gray-600 mb-1.5">
-                  Comentarios (Opcional)
+                  Comentarios <span className="font-normal text-gray-400">(Opcional)</span>
                 </label>
                 <textarea
                   id="comentarios"
-                  rows={3}
+                  rows={2}
                   value={comentarios}
                   onChange={(e) => {
                     setComentarios(e.target.value);
                     if (errors.comentarios) setErrors(prev => ({ ...prev, comentarios: '' }));
                   }}
                   maxLength={500}
-                  className={`w-full rounded-xl border ${
+                  className={`w-full min-w-0 box-border rounded-xl border ${
                     errors.comentarios ? 'border-red-300' : 'border-gray-300'
-                  } bg-white px-4 py-3 text-sm shadow-sm resize-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
+                  } bg-white px-3 py-3 text-sm shadow-sm resize-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all`}
                   placeholder="Notas sobre la venta..."
                 />
                 <div className="flex justify-between mt-1">
