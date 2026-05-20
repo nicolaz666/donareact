@@ -391,6 +391,62 @@ const ColorChipsWithAdd = ({ options, value, onChange, onAddColor }) => {
 };
 
 /* ─────────────────────────────────────────────
+   SELECT  (con opción de agregar valor local)
+───────────────────────────────────────────── */
+const SelectWithAddLocal = ({ value, onChange, options, placeholder, error, onAdd, addPlaceholder }) => {
+  const [adding, setAdding] = useState(false);
+  const [nuevo, setNuevo] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
+
+  const handleSelectChange = (val) => {
+    if (val === '__ADD__') { setAdding(true); }
+    else onChange(val || null);
+  };
+
+  const handleAdd = () => {
+    const val = nuevo.trim();
+    if (!val) return;
+    onAdd(val);
+    onChange(val);
+    setNuevo('');
+    setAdding(false);
+  };
+
+  return (
+    <div>
+      <div className="pf-select-wrap">
+        <select className={`pf-select${error ? ' error' : ''}`}
+          value={value ?? ''} onChange={e => handleSelectChange(e.target.value)}>
+          <option value="" disabled>{placeholder}</option>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="__ADD__">＋ Agregar nuevo...</option>
+        </select>
+      </div>
+      {adding && (
+        <div style={{ display:'flex', gap:8, marginTop:8, alignItems:'center' }}>
+          <input ref={inputRef} className="pf-input" style={{ flex:1, padding:'8px 12px' }}
+            placeholder={addPlaceholder || 'Nuevo valor...'}
+            value={nuevo} onChange={e => setNuevo(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleAdd();
+              if (e.key === 'Escape') { setAdding(false); setNuevo(''); }
+            }}
+          />
+          <button type="button" className="pf-btn pf-btn-primary pf-btn-sm"
+            onClick={handleAdd} disabled={!nuevo.trim()}>
+            Agregar
+          </button>
+          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm"
+            onClick={() => { setAdding(false); setNuevo(''); }}>✕</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
    SELECT  (con opción de agregar nuevo color)
 ───────────────────────────────────────────── */
 const SelectWithAdd = ({ value, onChange, options, placeholder, error, onAddColor }) => {
@@ -449,7 +505,7 @@ const SelectWithAdd = ({ value, onChange, options, placeholder, error, onAddColo
 ───────────────────────────────────────────── */
 
 /* Step 1: Información General */
-const StepInfo = ({ state, set, errors, categoriaApi }) => {
+const StepInfo = ({ state, set, errors, categoriaApi, tipos, modelos, onAddTipo, onAddModelo }) => {
   const s = state;
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
@@ -468,12 +524,16 @@ const StepInfo = ({ state, set, errors, categoriaApi }) => {
 
       <div className="pf-grid-2">
         <Field label="Tipo" error={errors.tipo}>
-          <Select value={s.tipo} onChange={v => set('tipo', v)} options={TIPOS}
-            placeholder="Seleccione un tipo" error={errors.tipo} />
+          <SelectWithAddLocal
+            value={s.tipo} onChange={v => set('tipo', v)} options={tipos}
+            placeholder="Seleccione un tipo" error={errors.tipo}
+            onAdd={onAddTipo} addPlaceholder="Ej: Trenzado..." />
         </Field>
         <Field label="Modelo" error={errors.modelo}>
-          <Select value={s.modelo} onChange={v => set('modelo', v)} options={MODELOS}
-            placeholder="Seleccione un modelo" error={errors.modelo} />
+          <SelectWithAddLocal
+            value={s.modelo} onChange={v => set('modelo', v)} options={modelos}
+            placeholder="Seleccione un modelo" error={errors.modelo}
+            onAdd={onAddModelo} addPlaceholder="Ej: Doble hebilla..." />
         </Field>
       </div>
 
@@ -660,6 +720,8 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
   const [categoriaApi, setCategoriaApi] = useState([]);
   const [coloresApi, setColoresApi] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [tiposState, setTiposState]     = useState(TIPOS);
+  const [modelosState, setModelosState] = useState(MODELOS);
 
   const set = (key, val) => {
     setState(prev => ({ ...prev, [key]: val }));
@@ -686,6 +748,14 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
       console.error('Error al crear color:', e);
       return null;
     }
+  };
+
+  const handleAddTipo = (nombre) => {
+    setTiposState(prev => [...prev, { label: nombre, value: nombre }]);
+  };
+
+  const handleAddModelo = (nombre) => {
+    setModelosState(prev => [...prev, { label: nombre, value: nombre }]);
   };
 
   /* cleanup blob urls */
@@ -798,7 +868,7 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
 
         {/* Panel */}
         <div ref={panelRef} style={{ overflowY:'auto', maxHeight:'calc(80vh - 160px)', paddingRight: 4 }}>
-          {step === 1 && <StepInfo  state={state} set={set} errors={errors} categoriaApi={categoriaApi} />}
+          {step === 1 && <StepInfo  state={state} set={set} errors={errors} categoriaApi={categoriaApi} tipos={tiposState} modelos={modelosState} onAddTipo={handleAddTipo} onAddModelo={handleAddModelo} />}
           {step === 2 && <StepColores state={state} set={set} errors={errors} coloresApi={coloresApi} onAddColor={handleAddColor} />}
           {step === 3 && (
             <StepImagenes
