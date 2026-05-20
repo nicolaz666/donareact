@@ -563,8 +563,11 @@ const StepInfo = ({ state, set, errors, categoriaApi, tipos, modelos, onAddTipo,
 };
 
 /* Step 2: Colores */
-const StepColores = ({ state, set, errors, coloresApi, onAddColor }) => {
+const StepColores = ({ state, set, errors, coloresApi, onAddColor, categoriaApi }) => {
   const s = state;
+  const catNombre = categoriaApi.find(c => c.value === s.categoria_id)?.label?.toLowerCase() || '';
+  const esApero = catNombre.includes('apero');
+
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
       <div>
@@ -585,11 +588,13 @@ const StepColores = ({ state, set, errors, coloresApi, onAddColor }) => {
             options={coloresApi} placeholder="Seleccionar" error={errors.colorTejido}
             onAddColor={onAddColor} />
         </Field>
-        <Field label="Color Soga Rienda" error={errors.colorSogaRienda}>
-          <SelectWithAdd value={s.colorSogaRienda} onChange={v => set('colorSogaRienda', v)}
-            options={coloresApi} placeholder="Seleccionar" error={errors.colorSogaRienda}
-            onAddColor={onAddColor} />
-        </Field>
+        {esApero && (
+          <Field label="Color Soga Rienda" error={errors.colorSogaRienda}>
+            <SelectWithAdd value={s.colorSogaRienda} onChange={v => set('colorSogaRienda', v)}
+              options={coloresApi} placeholder="Seleccionar" error={errors.colorSogaRienda}
+              onAddColor={onAddColor} />
+          </Field>
+        )}
         <Field label="Color Manzanos" error={errors.colorManzanos}>
           <SelectWithAdd value={s.colorManzanos} onChange={v => set('colorManzanos', v)}
             options={coloresApi} placeholder="Seleccionar" error={errors.colorManzanos}
@@ -695,12 +700,14 @@ const VALIDATORS = {
     if (!s.precio || Number(s.precio) <= 0) e.precio = 'Ingresa un precio válido';
     return e;
   },
-  2: (s) => {
+  2: (s, categoriaApi = []) => {
     const e = {};
+    const catNombre = categoriaApi.find(c => c.value === s.categoria_id)?.label?.toLowerCase() || '';
+    const esApero = catNombre.includes('apero');
     if (!s.colorPrincipal)  e.colorPrincipal  = 'Selecciona el color principal';
     if (!s.colorTejido)     e.colorTejido     = 'Selecciona el color tejido';
     if ((s.tipo === 'Tejido' || s.tipo === 'Rejo') && !s.colorCordon1) e.colorCordon1 = 'Selecciona el color cordón';
-    if (!s.colorSogaRienda) e.colorSogaRienda = 'Selecciona el color soga rienda';
+    if (esApero && !s.colorSogaRienda) e.colorSogaRienda = 'Selecciona el color soga rienda';
     if (!s.colorManzanos)   e.colorManzanos   = 'Selecciona el color manzanos';
     if (!s.colorCoronas)    e.colorCoronas    = 'Selecciona el color coronas';
     return e;
@@ -796,7 +803,7 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
 
   /* ── navigation ── */
   const goNext = () => {
-    const errs = VALIDATORS[step](state);
+    const errs = VALIDATORS[step](state, categoriaApi);
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setStep(s => Math.min(s + 1, 3));
@@ -869,7 +876,7 @@ const ProductoForm = ({ mostrarModal, cargarProductos }) => {
         {/* Panel */}
         <div ref={panelRef} style={{ overflowY:'auto', maxHeight:'calc(80vh - 160px)', paddingRight: 4 }}>
           {step === 1 && <StepInfo  state={state} set={set} errors={errors} categoriaApi={categoriaApi} tipos={tiposState} modelos={modelosState} onAddTipo={handleAddTipo} onAddModelo={handleAddModelo} />}
-          {step === 2 && <StepColores state={state} set={set} errors={errors} coloresApi={coloresApi} onAddColor={handleAddColor} />}
+          {step === 2 && <StepColores state={state} set={set} errors={errors} coloresApi={coloresApi} onAddColor={handleAddColor} categoriaApi={categoriaApi} />}
           {step === 3 && (
             <StepImagenes
               imagenes={imagenes} onAdd={handleAddFiles}
