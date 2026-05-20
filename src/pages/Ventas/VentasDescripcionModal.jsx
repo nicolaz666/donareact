@@ -95,46 +95,53 @@ const generarPDF = ({ rowData, abonosVenta, detallesVenta, totalAbonado }) => {
   doc.text('PRODUCTOS', margin, y);
   y += 5;
 
+  // Column right-edges (right-aligned anchors)
+  const cDesc = margin + 2;   // description left edge
+  const cCant = margin + 108; // quantity right edge  (~7mm col)
+  const cUnit = margin + 148; // unit price right edge (~40mm col)
+  const cSub  = W - margin;   // subtotal right edge  (~38mm col)
+
   // Table header
   rect(margin, y, W - margin * 2, 7, [241, 245, 249]);
   font(7, 'bold', [71, 85, 105]);
-  doc.text('DESCRIPCIÓN', margin + 2, y + 4.8);
-  doc.text('COLOR', margin + 85, y + 4.8);
-  doc.text('CANT.', W - margin - 28, y + 4.8, { align: 'right' });
-  doc.text('P. UNIT.', W - margin - 14, y + 4.8, { align: 'right' });
-  doc.text('SUBTOTAL', W - margin, y + 4.8, { align: 'right' });
+  doc.text('DESCRIPCIÓN', cDesc, y + 4.8);
+  doc.text('CANT.', cCant, y + 4.8, { align: 'right' });
+  doc.text('P. UNIT.', cUnit, y + 4.8, { align: 'right' });
+  doc.text('SUBTOTAL', cSub, y + 4.8, { align: 'right' });
   y += 9;
 
   detallesVenta.forEach((det, i) => {
-    checkY(14);
-    if (i % 2 === 0) rect(margin, y - 1, W - margin * 2, 11, [249, 250, 251]);
+    const rowH = 14;
+    checkY(rowH);
+    if (i % 2 === 0) rect(margin, y - 1, W - margin * 2, rowH, [249, 250, 251]);
     const p = det.producto;
     const nombre = p ? `${p.tipo} — ${p.modelo}` : `Producto #${det.producto_id}`;
-    const cat = p?.categoria?.nombre || '';
-    const color = p?.colorPrincipal || '—';
+    const subInfo = [p?.categoria?.nombre, p?.colorPrincipal, p?.colorTejido ? `Tejido: ${p.colorTejido}` : '']
+      .filter(Boolean).join(' · ');
     const precio = Number(p?.precio || 0);
     const subtotal = precio * (det.cantidad || 0);
 
     font(8, 'bold', [30, 30, 30]);
-    doc.text(doc.splitTextToSize(nombre, 78)[0], margin + 2, y + 4);
-    font(7, 'normal', [100, 116, 139]);
-    if (cat) doc.text(cat, margin + 2, y + 8);
+    doc.text(doc.splitTextToSize(nombre, 90)[0], cDesc, y + 5);
+    if (subInfo) {
+      font(7, 'normal', [120, 130, 150]);
+      doc.text(doc.splitTextToSize(subInfo, 90)[0], cDesc, y + 10);
+    }
     font(8, 'normal', [71, 85, 105]);
-    doc.text(doc.splitTextToSize(color, 30)[0], margin + 85, y + 4);
-    font(8, 'bold', [30, 30, 30]);
-    doc.text(String(det.cantidad || 0), W - margin - 28, y + 4, { align: 'right' });
-    doc.text(`$${formatearNumero(precio)}`, W - margin - 14, y + 4, { align: 'right' });
+    doc.text(String(det.cantidad || 0), cCant, y + 5, { align: 'right' });
+    doc.text(`$${formatearNumero(precio)}`, cUnit, y + 5, { align: 'right' });
     font(8, 'bold', [79, 70, 229]);
-    doc.text(`$${formatearNumero(subtotal)}`, W - margin, y + 4, { align: 'right' });
-    y += 12;
+    doc.text(`$${formatearNumero(subtotal)}`, cSub, y + 5, { align: 'right' });
+    y += rowH;
   });
 
   checkY(10);
   line(margin, y, W - margin, y, [200, 200, 220], 0.5);
   y += 4;
   font(8, 'bold', [30, 30, 30]);
-  doc.text('Total unidades:', W - margin - 28, y + 4, { align: 'right' });
-  doc.text(String(detallesVenta.reduce((s, d) => s + (d.cantidad || 0), 0)), W - margin, y + 4, { align: 'right' });
+  const totalUnidades = detallesVenta.reduce((s, d) => s + (d.cantidad || 0), 0);
+  doc.text('Total unidades:', cUnit, y + 4, { align: 'right' });
+  doc.text(String(totalUnidades), cSub, y + 4, { align: 'right' });
   y += 12;
 
   /* ── ABONOS ── */
@@ -146,25 +153,31 @@ const generarPDF = ({ rowData, abonosVenta, detallesVenta, totalAbonado }) => {
     doc.text('HISTORIAL DE PAGOS', margin, y);
     y += 6;
 
-    // header
+    // header — MONTO tiene 42mm (cSub=196, desde x=154)
+    const pFecha  = margin + 2;
+    const pMetodo = margin + 50;
+    const pComent = margin + 105;
+    const pMonto  = W - margin; // right-aligned
+
     rect(margin, y, W - margin * 2, 7, [241, 245, 249]);
     font(7, 'bold', [71, 85, 105]);
-    doc.text('FECHA', margin + 2, y + 4.8);
-    doc.text('MÉTODO', margin + 55, y + 4.8);
-    doc.text('COMENTARIO', margin + 95, y + 4.8);
-    doc.text('MONTO', W - margin, y + 4.8, { align: 'right' });
+    doc.text('FECHA', pFecha, y + 4.8);
+    doc.text('MÉTODO', pMetodo, y + 4.8);
+    doc.text('COMENTARIO', pComent, y + 4.8);
+    doc.text('MONTO', pMonto, y + 4.8, { align: 'right' });
     y += 9;
 
     abonosVenta.forEach((ab, i) => {
       checkY(10);
-      if (i % 2 === 0) rect(margin, y - 1, W - margin * 2, 8, [249, 250, 251]);
+      if (i % 2 === 0) rect(margin, y - 1, W - margin * 2, 9, [249, 250, 251]);
       font(8, 'normal', [30, 30, 30]);
-      doc.text(formatearFecha(ab.fecha_abono) || '—', margin + 2, y + 4);
-      doc.text((ab.metodo_pago || 'N/A').substring(0, 20), margin + 55, y + 4);
+      doc.text(formatearFecha(ab.fecha_abono) || '—', pFecha, y + 4);
+      doc.text((ab.metodo_pago || 'N/A').substring(0, 18), pMetodo, y + 4);
       font(7, 'normal', [100, 116, 139]);
-      doc.text((ab.comentario || '—').substring(0, 30), margin + 95, y + 4);
+      // comentario limitado para no solaparse con MONTO (~42mm desde x=154)
+      doc.text((ab.comentario || '—').substring(0, 22), pComent, y + 4);
       font(8, 'bold', [22, 163, 74]);
-      doc.text(`$${formatearNumero(ab.monto_abonado)}`, W - margin, y + 4, { align: 'right' });
+      doc.text(`$${formatearNumero(ab.monto_abonado)}`, pMonto, y + 4, { align: 'right' });
       y += 9;
     });
     y += 2;
