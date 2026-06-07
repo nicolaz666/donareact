@@ -6,6 +6,8 @@ import Clientes from "./pages/Clientes"
 import Categorias from "./pages/Categorias/Categorias"
 import MostrarVentas from "./pages/MostrarVentas"
 import Producto from "./pages/Productos/Producto"
+import Banner from "./pages/Banner/Banner"
+import Blog from "./pages/Blog/Blog"
 import AuthService from './services/AuthService';
 import './services/axiosConfig';
 import Login from './pages/Auth/Login';
@@ -39,6 +41,8 @@ function App() {
               <Route path="Categorias" element={<Categorias />} />
               <Route path="MostrarVentas" element={<MostrarVentas />} />
               <Route path="Producto" element={<Producto />} />
+              <Route path="Banner" element={<Banner />} />
+              <Route path="Blog" element={<Blog />} />
 
             </Route>
           </Route>

@@ -12,6 +12,12 @@ const PRESETS = {
   producto:      { ...tokens.severity.info,    label: "Producto"     },
   material:      { ...tokens.severity.primary, label: "Material"     },
   ambos:         { ...tokens.severity.success, label: "Ambos"        },
+  activo:        { ...tokens.severity.success, label: "Activo"       },
+  inactivo:      { ...tokens.severity.ghost,   label: "Inactivo"     },
+  publicado:     { ...tokens.severity.success, label: "Publicado"    },
+  borrador:      { ...tokens.severity.warning, label: "Borrador"     },
+  video:         { ...tokens.severity.primary, label: "Video"        },
+  imagenes:      { ...tokens.severity.info,    label: "Imágenes"     },
 };
 
 /**

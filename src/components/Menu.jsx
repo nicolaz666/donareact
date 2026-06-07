@@ -6,6 +6,8 @@ import {
   Tag,
   Package,
   ShoppingCart,
+  Image,
+  Newspaper,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -17,6 +19,8 @@ const LINKS_SIDEBAR = [
   { id: 3, path: "/Categorias", name: "Categorías", icon: Tag },
   { id: 4, path: "/Producto", name: "Productos", icon: Package },
   { id: 5, path: "/MostrarVentas", name: "Ventas", icon: ShoppingCart },
+  { id: 6, path: "/Banner", name: "Banner", icon: Image },
+  { id: 7, path: "/Blog", name: "Blog", icon: Newspaper },
 ];
 
 const NavItem = ({ link, isActive, collapsed, onNavigate }) => {
