@@ -7,6 +7,7 @@ import {
 import VentasService from '../services/VentasService';
 import ProductoService from '../services/ProductoService';
 import detalleVentasService from '../services/detallleVentasService';
+import { formatearFecha } from '../utils/formatters';
 
 function Home() {
   // Estados para datos
@@ -18,11 +19,15 @@ function Home() {
 
   // Estados para métricas calculadas
   const [ventasPorMes, setVentasPorMes] = useState([]);
-  const [totalSaldoMes, setTotalSaldoMes] = useState(0);
   const [totalSaldoAcumulado, setTotalSaldoAcumulado] = useState(0);
   const [totalValorVentas, setTotalValorVentas] = useState(0);
   const [productosMasVendidos, setProductosMasVendidos] = useState([]);
   const [ventasPorEstado, setVentasPorEstado] = useState([]);
+
+  // Estados para el resumen del mes (entregas)
+  const [aperosPorEntregar, setAperosPorEntregar] = useState([]);
+  const [saldoAperosEntregar, setSaldoAperosEntregar] = useState(0);
+  const [saldoQueSeDebe, setSaldoQueSeDebe] = useState(0);
 
   /**
    * Carga todos los datos necesarios al montar el componente
@@ -39,6 +44,7 @@ function Home() {
       calcularVentasPorMes();
       calcularSaldos();
       calcularVentasPorEstado();
+      calcularResumenMes();
     }
     if (detallesVentas.length > 0 && productos.length > 0) {
       calcularProductosMasVendidos();
@@ -116,36 +122,71 @@ function Home() {
   };
 
   /**
-   * Calcula el saldo del mes actual y el saldo acumulado total
+   * Calcula el total abonado acumulado y el valor total de ventas
    */
   const calcularSaldos = () => {
-    const mesActual = new Date().getMonth();
-    const añoActual = new Date().getFullYear();
-
-    let saldoMes = 0;
     let totalAbonado = 0;
     let valorTotalVentas = 0;
 
     ventas.forEach(venta => {
-      const fechaVenta = new Date(venta.fecha_venta);
       const total = Number(venta.total || 0);
       const debe = Number(venta.debe || 0);
-
-      // Saldo (deuda) generada en el mes actual
-      if (fechaVenta.getMonth() === mesActual && fechaVenta.getFullYear() === añoActual) {
-        saldoMes += debe;
-      }
 
       // Total abonado acumulado (lo que han pagado los clientes)
       totalAbonado += total - debe;
       valorTotalVentas += total;
     });
 
-    setTotalSaldoMes(saldoMes);
     setTotalSaldoAcumulado(totalAbonado);
     setTotalValorVentas(valorTotalVentas);
 
-    console.log('💰 Saldos calculados:', { saldoMes, totalAbonado, valorTotalVentas });
+    console.log('💰 Saldos calculados:', { totalAbonado, valorTotalVentas });
+  };
+
+  /**
+   * Calcula el resumen de entregas del mes actual: aperos por entregar,
+   * el saldo total de esas ventas y lo que se debe de ellas
+   */
+  const calcularResumenMes = () => {
+    const mesActual = new Date().getMonth();
+    const añoActual = new Date().getFullYear();
+
+    const ventasDelMes = ventas.filter(venta => {
+      if (!venta.fecha_entrega_estimada) return false;
+      const fechaEntrega = new Date(venta.fecha_entrega_estimada);
+      return fechaEntrega.getMonth() === mesActual && fechaEntrega.getFullYear() === añoActual;
+    });
+
+    const ventasDelMesPorId = new Map(ventasDelMes.map(v => [Number(v.id), v]));
+
+    const aperos = detallesVentas
+      .filter(detalle => ventasDelMesPorId.has(Number(detalle.venta)))
+      .map(detalle => {
+        const venta = ventasDelMesPorId.get(Number(detalle.venta));
+        const producto = detalle.producto || {};
+        const cliente = venta?.cliente
+          ? `${venta.cliente.nombre || ''} ${venta.cliente.apellido || ''}`.trim()
+          : null;
+
+        return {
+          id: detalle.id,
+          nombre: producto.tipo && producto.modelo ? `${producto.tipo} - ${producto.modelo}` : `Producto ${producto.id ?? ''}`,
+          cantidad: Number(detalle.cantidad || 0),
+          cliente,
+          fechaEntrega: venta?.fecha_entrega_estimada,
+          ventaId: venta?.id,
+        };
+      })
+      .sort((a, b) => new Date(a.fechaEntrega) - new Date(b.fechaEntrega));
+
+    const saldoAperos = ventasDelMes.reduce((sum, v) => sum + Number(v.total || 0), 0);
+    const saldoDebe = ventasDelMes.reduce((sum, v) => sum + Number(v.debe || 0), 0);
+
+    setAperosPorEntregar(aperos);
+    setSaldoAperosEntregar(saldoAperos);
+    setSaldoQueSeDebe(saldoDebe);
+
+    console.log('📦 Resumen del mes:', { aperos, saldoAperos, saldoDebe });
   };
 
   /**
@@ -266,7 +307,7 @@ function Home() {
         </div>
 
         {/* Cards de Métricas Principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Total Ventas */}
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
@@ -279,22 +320,6 @@ function Home() {
               <div className="bg-indigo-100 p-3 rounded-full">
                 <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Saldo Mes Actual */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Saldo del Mes</p>
-                <p className="text-2xl font-bold text-orange-600">{formatearMoneda(totalSaldoMes)}</p>
-                <p className="text-xs text-gray-400 mt-1">Pendiente de cobro</p>
-              </div>
-              <div className="bg-orange-100 p-3 rounded-full">
-                <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
@@ -331,6 +356,54 @@ function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Resumen del Mes (entregas) */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-800">📦 Resumen del Mes</h2>
+            <span className="text-sm text-gray-500 capitalize">
+              {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            </span>
+          </div>
+
+          {/* Saldos del mes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
+              <p className="text-gray-500 text-sm font-medium mb-1">Saldo total de aperos a entregar</p>
+              <p className="text-2xl font-bold text-blue-600">{formatearMoneda(saldoAperosEntregar)}</p>
+            </div>
+            <div className="bg-orange-50 rounded-lg p-4 border-l-4 border-orange-500">
+              <p className="text-gray-500 text-sm font-medium mb-1">Saldo que se debe</p>
+              <p className="text-2xl font-bold text-orange-600">{formatearMoneda(saldoQueSeDebe)}</p>
+            </div>
+          </div>
+
+          {/* Lista de aperos por entregar */}
+          <h3 className="text-sm font-semibold text-gray-600 mb-3">
+            Aperos por entregar ({aperosPorEntregar.length})
+          </h3>
+          {aperosPorEntregar.length > 0 ? (
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+              {aperosPorEntregar.map(apero => (
+                <div key={apero.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-medium text-gray-800">
+                      {apero.nombre} <span className="text-gray-400">x{apero.cantidad}</span>
+                    </p>
+                    {apero.cliente && (
+                      <p className="text-xs text-gray-400 mt-0.5">Cliente: {apero.cliente}</p>
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
+                    {formatearFecha(apero.fechaEntrega)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-sm py-4 text-center">No hay aperos programados para entregar este mes</p>
+          )}
         </div>
 
         {/* Gráficos en Grid */}
