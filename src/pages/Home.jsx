@@ -20,6 +20,7 @@ function Home() {
   const [ventasPorMes, setVentasPorMes] = useState([]);
   const [totalSaldoMes, setTotalSaldoMes] = useState(0);
   const [totalSaldoAcumulado, setTotalSaldoAcumulado] = useState(0);
+  const [totalValorVentas, setTotalValorVentas] = useState(0);
   const [productosMasVendidos, setProductosMasVendidos] = useState([]);
   const [ventasPorEstado, setVentasPorEstado] = useState([]);
 
@@ -120,27 +121,31 @@ function Home() {
   const calcularSaldos = () => {
     const mesActual = new Date().getMonth();
     const añoActual = new Date().getFullYear();
-    
+
     let saldoMes = 0;
-    let saldoTotal = 0;
+    let totalAbonado = 0;
+    let valorTotalVentas = 0;
 
     ventas.forEach(venta => {
       const fechaVenta = new Date(venta.fecha_venta);
-      const saldo = Number(venta.debe || 0);
-      
-      // Saldo del mes actual
+      const total = Number(venta.total || 0);
+      const debe = Number(venta.debe || 0);
+
+      // Saldo (deuda) generada en el mes actual
       if (fechaVenta.getMonth() === mesActual && fechaVenta.getFullYear() === añoActual) {
-        saldoMes += saldo;
+        saldoMes += debe;
       }
-      
-      // Saldo total acumulado
-      saldoTotal += saldo;
+
+      // Total abonado acumulado (lo que han pagado los clientes)
+      totalAbonado += total - debe;
+      valorTotalVentas += total;
     });
 
     setTotalSaldoMes(saldoMes);
-    setTotalSaldoAcumulado(saldoTotal);
-    
-    console.log('💰 Saldos calculados:', { saldoMes, saldoTotal });
+    setTotalSaldoAcumulado(totalAbonado);
+    setTotalValorVentas(valorTotalVentas);
+
+    console.log('💰 Saldos calculados:', { saldoMes, totalAbonado, valorTotalVentas });
   };
 
   /**
@@ -268,7 +273,8 @@ function Home() {
               <div>
                 <p className="text-gray-500 text-sm font-medium mb-1">Total Ventas</p>
                 <p className="text-3xl font-bold text-gray-900">{ventas.length}</p>
-                <p className="text-xs text-gray-400 mt-1">Registradas</p>
+                <p className="text-xs text-gray-400 mt-1">Ventas registradas</p>
+                <p className="text-lg font-bold text-indigo-600 mt-2">{formatearMoneda(totalValorVentas)}</p>
               </div>
               <div className="bg-indigo-100 p-3 rounded-full">
                 <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,16 +300,16 @@ function Home() {
             </div>
           </div>
 
-          {/* Saldo Total Acumulado */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 hover:shadow-xl transition-shadow">
+          {/* Saldo Acumulado (total abonado) */}
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm font-medium mb-1">Saldo Acumulado</p>
-                <p className="text-2xl font-bold text-red-600">{formatearMoneda(totalSaldoAcumulado)}</p>
-                <p className="text-xs text-gray-400 mt-1">Total por cobrar</p>
+                <p className="text-2xl font-bold text-emerald-600">{formatearMoneda(totalSaldoAcumulado)}</p>
+                <p className="text-xs text-gray-400 mt-1">Total abonado</p>
               </div>
-              <div className="bg-red-100 p-3 rounded-full">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-emerald-100 p-3 rounded-full">
+                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
