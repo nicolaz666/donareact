@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://donacianocore.onrender.com/api/";
+const DEFAULT_API_URL = "https://core.aperostimbio.com.co/api/";
 
 /**
  * Base de API (siempre termina con `/`).
@@ -34,7 +34,7 @@ export const BASE_BACKEND_URL = (() => {
     const u = new URL(BASE_API_URL);
     return `${u.protocol}//${u.host}`;
   } catch {
-    return "https://donacianocore.onrender.com";
+    return "https://core.aperostimbio.com.co";
   }
 })();
 
