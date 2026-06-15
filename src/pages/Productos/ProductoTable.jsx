@@ -5,7 +5,8 @@ import ProductoForm from "./ProductoForm";
 import ProductoFormEdit from "./ProductoFormEdit";
 import UnidadProducto from "../UnidadProducto/UnidadProducto";
 import CrearUnidadProducto from "../UnidadProducto/CrearUnidadProducto";
-import { Edit2, Trash2, Package, PlusCircle, ChevronLeft, ChevronRight, Search, Plus } from "lucide-react";
+import InventarioUnidadesModal from "../UnidadProducto/InventarioUnidadesModal";
+import { Edit2, Trash2, Package, PlusCircle, ChevronLeft, ChevronRight, Search, Plus, Boxes } from "lucide-react";
 import ImagenesModal from "./Imagenesmodal";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -122,6 +123,7 @@ const ProductoTable = () => {
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
   const [mostrarModalUnidades, setMostrarModalUnidades] = useState(false);
   const [mostrarModalCrearUnidad, setMostrarModalCrearUnidad] = useState(false);
+  const [mostrarModalInventario, setMostrarModalInventario] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -179,15 +181,25 @@ const ProductoTable = () => {
             {filtered.length} productos registrados
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => setMostrarModal(true)}
-          className="shadow-[0_2px_8px_rgba(15,23,42,0.18)]"
-        >
-          <Plus size={16} />
-          Nuevo Producto
-        </Button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button
+            variant="outlined"
+            size="md"
+            onClick={() => setMostrarModalInventario(true)}
+          >
+            <Boxes size={16} />
+            Ver Inventario
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setMostrarModal(true)}
+            className="shadow-[0_2px_8px_rgba(15,23,42,0.18)]"
+          >
+            <Plus size={16} />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -879,6 +891,12 @@ const ProductoTable = () => {
         visible={mostrarModalUnidades}
         onHide={() => { setMostrarModalUnidades(false); setSelectedProduct(null); }}
         producto={selectedProduct}
+      />
+
+      <InventarioUnidadesModal
+        visible={mostrarModalInventario}
+        onHide={() => setMostrarModalInventario(false)}
+        productos={productos}
       />
 
       <Dialog
