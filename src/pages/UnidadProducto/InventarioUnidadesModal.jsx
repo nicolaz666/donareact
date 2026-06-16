@@ -50,6 +50,8 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
 
       try {
         const data = await UnidadProductoService.getAllUnidadProductos();
+        const vendida = (data || []).find(u => u.estado === 'vendido');
+        console.log('🔍 Unidad vendida (raw):', JSON.stringify(vendida, null, 2));
         setUnidades(data || []);
       } catch (err) {
         setError(err.message || 'Error al cargar unidades');
