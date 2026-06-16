@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import UnidadProductoService from '../../services/UnidadProductoService';
+import VentasService from '../../services/VentasService';
 
 const ESTADOS = {
   disponible: { color: '#10b981', bg: '#d1fae5', label: 'Disponible' },
@@ -36,6 +37,7 @@ const EstadoBadge = ({ estado }) => {
 
 const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
   const [unidades, setUnidades] = useState([]);
+  const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
@@ -49,10 +51,12 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
       setError(null);
 
       try {
-        const data = await UnidadProductoService.getAllUnidadProductos();
-        const vendida = (data || []).find(u => u.estado === 'vendido');
-        console.log('🔍 Unidad vendida (raw):', JSON.stringify(vendida, null, 2));
+        const [data, ventasData] = await Promise.all([
+          UnidadProductoService.getAllUnidadProductos(),
+          VentasService.getAllVentas(),
+        ]);
         setUnidades(data || []);
+        setVentas(ventasData || []);
       } catch (err) {
         setError(err.message || 'Error al cargar unidades');
         setUnidades([]);
@@ -64,6 +68,11 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
     cargar();
   }, [visible]);
 
+  const ventasMap = useMemo(
+    () => new Map(ventas.map(v => [Number(v.id), v])),
+    [ventas]
+  );
+
   const filas = useMemo(() => {
     return unidades.map(u => {
       const productoRef = u.producto;
@@ -71,17 +80,13 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
         ? productoRef
         : productos.find(p => Number(p.id) === Number(productoRef));
 
-      // El backend puede exponer el cliente directamente en la unidad
-      // o anidado dentro del objeto venta
       let clienteNombre = null;
-      if (u.cliente && typeof u.cliente === 'object') {
-        clienteNombre = `${u.cliente.nombre || ''} ${u.cliente.apellido || ''}`.trim() || null;
-      } else if (u.venta && typeof u.venta === 'object' && u.venta.cliente) {
-        const c = u.venta.cliente;
-        if (typeof c === 'object') {
+      const ventaId = typeof u.venta === 'object' ? u.venta?.id : u.venta;
+      if (ventaId) {
+        const venta = ventasMap.get(Number(ventaId));
+        const c = venta?.cliente;
+        if (c) {
           clienteNombre = `${c.nombre || ''} ${c.apellido || ''}`.trim() || null;
-        } else {
-          clienteNombre = String(c);
         }
       }
 
@@ -94,7 +99,7 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
         cliente: clienteNombre,
       };
     });
-  }, [unidades, productos]);
+  }, [unidades, productos, ventasMap]);
 
   const totales = useMemo(() => {
     const conteo = { total: filas.length, disponible: 0, vendido: 0, reservado: 0, mantenimiento: 0 };
