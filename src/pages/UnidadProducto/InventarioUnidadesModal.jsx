@@ -69,12 +69,27 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
         ? productoRef
         : productos.find(p => Number(p.id) === Number(productoRef));
 
+      // El backend puede exponer el cliente directamente en la unidad
+      // o anidado dentro del objeto venta
+      let clienteNombre = null;
+      if (u.cliente && typeof u.cliente === 'object') {
+        clienteNombre = `${u.cliente.nombre || ''} ${u.cliente.apellido || ''}`.trim() || null;
+      } else if (u.venta && typeof u.venta === 'object' && u.venta.cliente) {
+        const c = u.venta.cliente;
+        if (typeof c === 'object') {
+          clienteNombre = `${c.nombre || ''} ${c.apellido || ''}`.trim() || null;
+        } else {
+          clienteNombre = String(c);
+        }
+      }
+
       return {
         id: u.id,
         numeroSerie: u.numeroSerie,
         estado: u.estado,
         fechaCreacion: u.fechaCreacion,
         nombreProducto: producto ? `${producto.tipo} - ${producto.modelo}` : `Producto #${productoRef}`,
+        cliente: clienteNombre,
       };
     });
   }, [unidades, productos]);
@@ -93,6 +108,7 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
     const coincideBusqueda = !q
       || f.nombreProducto.toLowerCase().includes(q)
       || f.numeroSerie?.toLowerCase().includes(q)
+      || f.cliente?.toLowerCase().includes(q)
       || String(f.id).includes(q);
     const coincideEstado = filtroEstado === 'todos' || f.estado?.toLowerCase() === filtroEstado;
     return coincideBusqueda && coincideEstado;
@@ -196,6 +212,7 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
                     <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Producto</th>
                     <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Número de Serie</th>
                     <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600' }}>Estado</th>
+                    <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Cliente</th>
                     <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Fecha Creación</th>
                   </tr>
                 </thead>
@@ -221,6 +238,9 @@ const InventarioUnidadesModal = ({ visible, onHide, productos = [] }) => {
                       </td>
                       <td style={{ padding: '1rem', border: '1px solid #e5e7eb', textAlign: 'center' }}>
                         <EstadoBadge estado={u.estado} />
+                      </td>
+                      <td style={{ padding: '1rem', border: '1px solid #e5e7eb', color: '#0f172a', fontWeight: u.cliente ? 500 : 400 }}>
+                        {u.cliente || <span style={{ color: '#9ca3af' }}>—</span>}
                       </td>
                       <td style={{ padding: '1rem', border: '1px solid #e5e7eb', color: '#6b7280' }}>
                         {u.fechaCreacion ? new Date(u.fechaCreacion).toLocaleDateString('es-ES', {
